@@ -114,6 +114,7 @@ const inputSwitchBoard = document.getElementById("input-switch-board");
 const btnSwitchBoard = document.getElementById("btn-switch-board");
 const appMainLogo = document.getElementById("app-main-logo");
 const editAppTitle = document.getElementById("edit-app-title");
+const editStickerTheme = document.getElementById("edit-sticker-theme");
 const editPin = document.getElementById("edit-pin");
 const editReaderName = document.getElementById("edit-reader-name");
 const editEditorName = document.getElementById("edit-editor-name");
@@ -2224,7 +2225,7 @@ document.addEventListener("keydown", (e) => {
 // ==========================================
 // 9. 앱 초기 구동 및 실시간 데이터 싱크 폴링
 // ==========================================
-document.addEventListener("DOMContentLoaded", () => {
+function initializeApp() {
     // 1. 기존 데모/더미 데이터 로컬스토리지 캐시 정리
     localStorage.removeItem("board_DEFAULT");
     localStorage.removeItem("stickers_DEFAULT");
@@ -2396,4 +2397,10 @@ function startAutoSync() {
     });
 
     startAutoSync();
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeApp, { once: true });
+} else {
+    initializeApp();
+}
