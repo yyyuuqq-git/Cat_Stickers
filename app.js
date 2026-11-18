@@ -30,27 +30,27 @@ function isCatBoard(b) {
     if (!b) return false;
     const idStr = String(typeof b === 'string' ? b : (b.id || "")).toUpperCase();
     const titleStr = String(typeof b === 'object' && b.title ? b.title : "").toUpperCase();
-    
+
     // 1. 테스트 보드 배제 (TEST_BOARD_x, TEST-BOARD-xxx 등)
     if (idStr.startsWith("TEST-BOARD") || idStr.startsWith("TEST_BOARD") || idStr === "TEST-BOARD" || idStr === "TEST_BOARD" || idStr.startsWith("TEST_")) return false;
     if (titleStr.includes("테스트")) return false;
 
     // 2. 달 / 우주 / 스티치 / 욱이 보드 배제 (BON_WOOK, TEST-COSMIC-BOARD, 1 등 100% 프라이버시 격리)
-    if (idStr === "TEST-COSMIC-BOARD" || idStr.startsWith("BON_WOOK") || idStr === "1" || 
-        idStr.startsWith("MOON") || idStr.includes("COSMIC") || idStr.includes("LUNAR") || idStr.startsWith("TEST-COSMIC") || 
-        titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") || 
+    if (idStr === "TEST-COSMIC-BOARD" || idStr.startsWith("BON_WOOK") || idStr === "1" ||
+        idStr.startsWith("MOON") || idStr.includes("COSMIC") || idStr.includes("LUNAR") || idStr.startsWith("TEST-COSMIC") ||
+        titleStr.includes("달") || titleStr.includes("우주") || titleStr.includes("별") || titleStr.includes("스티치") ||
         titleStr.includes("업보") || titleStr.includes("욱이") || titleStr.includes("째욱")) return false;
 
     // 3. 수산시장 / 물고기 / 싱싱 어류 보드 배제 (0427, 양건, FISH 등 100% 프라이버시 격리)
-    if (idStr === "0427" || titleStr.includes("양건") || idStr.startsWith("FISH") || idStr.includes("FISH") || 
-        titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") || 
-        titleStr.includes("어시장") || titleStr.includes("광어") || titleStr.includes("우럭") || 
-        titleStr.includes("연어") || titleStr.includes("고등어") || titleStr.includes("참치") || 
-        titleStr.includes("문어") || titleStr.includes("오징어") || titleStr.includes("새우") || 
+    if (idStr === "0427" || titleStr.includes("양건") || idStr.startsWith("FISH") || idStr.includes("FISH") ||
+        titleStr.includes("수산시장") || titleStr.includes("물고기") || titleStr.includes("생선") ||
+        titleStr.includes("어시장") || titleStr.includes("광어") || titleStr.includes("우럭") ||
+        titleStr.includes("연어") || titleStr.includes("고등어") || titleStr.includes("참치") ||
+        titleStr.includes("문어") || titleStr.includes("오징어") || titleStr.includes("새우") ||
         titleStr.includes("해산물") || titleStr.includes("바다")) return false;
 
     // 4. 채소가게 보드 배제 (CHAEDO_, VEGE_ 등 100% 프라이버시 격리)
-    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") || 
+    if (idStr.startsWith("CHAEDO") || idStr.includes("VEGE") || idStr.includes("VEGETABLE") ||
         titleStr.includes("채소") || titleStr.includes("야채") || titleStr.includes("당근") || titleStr.includes("채건")) return false;
 
     // 5. 허용: 고양이 테마 (CAT, KITTY, MEOW, 고양이, 야옹, 냐옹, 냥이 등) 및 본 고양이 앱에서 생성된 사용자 커스텀 보드
@@ -59,11 +59,11 @@ function isCatBoard(b) {
 
 let initialBoardId = localStorage.getItem("current_board_id");
 if (!initialBoardId || !isCatBoard(initialBoardId) || initialBoardId.startsWith("TEST-") || initialBoardId.startsWith("TEST_")) {
-    const regList = (function() {
+    const regList = (function () {
         try {
             const list = JSON.parse(localStorage.getItem("registered_boards") || "[]");
             return list.filter(b => isCatBoard(b) && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST-") && !String(typeof b === 'string' ? b : (b.id || '')).toUpperCase().startsWith("TEST_"));
-        } catch(e) { return []; }
+        } catch (e) { return []; }
     })();
     initialBoardId = (regList.length > 0) ? regList[0].id : "CAT_1";
     localStorage.setItem("current_board_id", initialBoardId);
@@ -490,8 +490,8 @@ const STICKER_THEMES = (typeof window !== 'undefined' && window.STICKER_THEMES) 
 };
 
 function normalizeStickerTheme(theme) {
-    if (typeof window !== 'undefined' && typeof window.normalizeStickerTheme === 'function') {
-        return window.normalizeStickerTheme(theme);
+    if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.normalizeStickerTheme === 'function') {
+        return window.CatStickersModule.normalizeStickerTheme(theme);
     }
     return "cat";
 }
@@ -501,25 +501,31 @@ function getActiveStickerTheme() {
 }
 
 function getThemeVectorGraphic(theme, type) {
-    if (typeof window !== 'undefined' && typeof window.getThemeVectorGraphic === 'function') {
-        return window.getThemeVectorGraphic(theme, type);
+    if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.getThemeVectorGraphic === 'function') {
+        return window.CatStickersModule.getThemeVectorGraphic(theme, type);
     }
     return "";
 }
 
 function getThemeStickerMarkup(theme, type) {
-    if (typeof window !== 'undefined' && typeof window.getThemeStickerMarkup === 'function') {
-        return window.getThemeStickerMarkup(theme, type);
+    try {
+        if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.getThemeStickerMarkup === 'function') {
+            return window.CatStickersModule.getThemeStickerMarkup(theme, type);
+        }
+        const id = Math.abs(Number(type) || 0) % 5;
+        const item = (typeof PRAISE_STICKERS !== 'undefined' && PRAISE_STICKERS[id]) ? PRAISE_STICKERS[id] : null;
+        const src = item && item.src ? item.src : `image/image_${id + 1}.png`;
+        return `<img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
+    } catch (e) {
+        console.warn("getThemeStickerMarkup fallback:", e);
+        const fallbackId = (Math.abs(Number(type) || 0) % 5) + 1;
+        return `<img src="image/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
     }
-    const id = Math.abs(Number(type) || 0) % 5;
-    const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
-    const src = item ? item.src : `image/image_${id + 1}.png`;
-    return `<img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
 }
 
 function renderThemePreviewBar(container, theme) {
-    if (typeof window !== 'undefined' && typeof window.renderThemePreviewBar === 'function') {
-        return window.renderThemePreviewBar(container, theme);
+    if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.renderThemePreviewBar === 'function') {
+        return window.CatStickersModule.renderThemePreviewBar(container, theme);
     }
 }
 
@@ -579,15 +585,25 @@ function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
     if (!isSticker) {
         return "";
     }
-    const parsed = parseStickerMemo(rawMemo);
-    const type = (parsed.type !== null && parsed.type >= 0) ? (parsed.type % 5) : (index % 5);
-    const theme = getActiveStickerTheme();
+    try {
+        const parsed = parseStickerMemo(rawMemo);
+        const type = (parsed && parsed.type !== null && parsed.type >= 0) ? (parsed.type % 5) : (index % 5);
+        const theme = getActiveStickerTheme();
 
-    return `
-        <div class="sticker-img-container active">
-            ${getThemeStickerMarkup(theme, type)}
-        </div>
-    `;
+        return `
+            <div class="sticker-img-container active">
+                ${getThemeStickerMarkup(theme, type)}
+            </div>
+        `;
+    } catch (e) {
+        console.warn("getSeaCreatureStickerSvg fallback:", e);
+        const fallbackId = (index % 5) + 1;
+        return `
+            <div class="sticker-img-container active">
+                <img src="image/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />
+            </div>
+        `;
+    }
 }
 
 function renderStickerPickerGrid() {
@@ -703,7 +719,7 @@ async function getNextSequentialBoardCode(baseBoardId) {
     if (sourceId === "DEFAULT" || sourceId === "TEST-COSMIC-BOARD" || sourceId === "1") {
         sourceId = "CAT";
     }
-    
+
     let basePrefix = String(sourceId).trim().toUpperCase();
     basePrefix = basePrefix.replace(/_\d+$/, "").replace(/\d+$/, "");
     if (basePrefix.endsWith("_")) {
@@ -1213,6 +1229,7 @@ async function refreshApp() {
 
         // 보드가 정상적으로 로드된 경우 설정창 숨기고 콘텐츠 노출
         welcomeScreen.classList.add("hidden");
+        appContent.classList.remove("hidden");
         if (board) {
             if (board.title && (board.title.includes("우주") || board.title.includes("칭찬나라") || board.title.includes("스티커핀"))) {
                 board.title = "고양이 칭찬판";
@@ -1282,24 +1299,28 @@ async function refreshApp() {
 
         const currentSlotElements = stickerGrid.children;
         for (let i = 0; i < targetCount; i++) {
-            const slot = currentSlotElements[i];
-            if (!slot) continue;
+            try {
+                const slot = currentSlotElements[i];
+                if (!slot) continue;
 
-            const isActive = activeIndices.has(i);
-            const stickerData = currentStickers.find(s => s.sticker_index === i);
-            const rawMemo = stickerData && stickerData.memo ? stickerData.memo : "";
+                const isActive = activeIndices.has(i);
+                const stickerData = currentStickers.find(s => s.sticker_index === i);
+                const rawMemo = stickerData && stickerData.memo ? stickerData.memo : "";
 
-            const prevActive = slot.classList.contains("active");
-            const prevMemo = slot.getAttribute("data-memo") || "";
+                const prevActive = slot.classList.contains("active");
+                const prevMemo = slot.getAttribute("data-memo") || "";
 
-            if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
-                slot.className = `grid-slot ${isActive ? "active" : ""}`;
-                slot.setAttribute("data-memo", rawMemo);
-                slot.setAttribute("aria-label", `${i + 1}번째 칸, ${isActive ? "스티커 붙음" : "비어 있음"}`);
-                slot.innerHTML = `
-                    ${getSeaCreatureStickerSvg(i, isActive, rawMemo)}
-                    <span class="slot-number">${i + 1}</span>
-                `;
+                if (prevActive !== isActive || prevMemo !== rawMemo || !slot.hasChildNodes()) {
+                    slot.className = `grid-slot ${isActive ? "active" : ""}`;
+                    slot.setAttribute("data-memo", rawMemo);
+                    slot.setAttribute("aria-label", `${i + 1}번째 칸, ${isActive ? "스티커 붙음" : "비어 있음"}`);
+                    slot.innerHTML = `
+                        ${getSeaCreatureStickerSvg(i, isActive, rawMemo)}
+                        <span class="slot-number">${i + 1}</span>
+                    `;
+                }
+            } catch (slotErr) {
+                console.warn(`슬롯 ${i} 렌더링 에러 방어:`, slotErr);
             }
         }
 
@@ -1322,6 +1343,9 @@ async function refreshApp() {
     } finally {
         // 로딩 종료 보장
         loadingSpinner.classList.add("hidden");
+        if (welcomeScreen && welcomeScreen.classList.contains("hidden")) {
+            appContent.classList.remove("hidden");
+        }
     }
 }
 
@@ -2157,7 +2181,7 @@ document.querySelectorAll(".modal-overlay").forEach(overlay => {
     overlay.addEventListener("click", (e) => {
         if (e.target === overlay) {
             overlay.classList.add("hidden");
-            
+
             if (overlay.id === "modal-memo-view") {
                 editTargetIndex = null;
                 const memoViewContent = document.querySelector("#modal-memo-view .memo-view-content");
@@ -2391,29 +2415,29 @@ function initializeApp() {
         }
     });
 
-// 모바일 브라우저 백그라운드/네트워크 3초 자동 동기화 헬퍼 (편집자 테마 색상 및 스티커 실시간 동기화)
-let syncInterval = null;
-function startAutoSync() {
-    if (syncInterval) clearInterval(syncInterval);
-    syncInterval = setInterval(async () => {
-        if (!document.hidden && currentBoardId) {
-            const rawStickers = await apiGetStickers(currentBoardId);
-            const themeMeta = rawStickers.find(s => s.sticker_index === 999);
-            if (themeMeta && themeMeta.memo) {
-                const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
-                if (match) {
-                    const remoteColor = match[1];
-                    const localColor = localStorage.getItem(`board_theme_color_${currentBoardId}`);
-                    if (remoteColor !== localColor) {
-                        localStorage.setItem(`board_theme_color_${currentBoardId}`, remoteColor);
-                        if (currentBoard) currentBoard.theme_color = remoteColor;
-                        applyThemeColor(remoteColor, false);
+    // 모바일 브라우저 백그라운드/네트워크 3초 자동 동기화 헬퍼 (편집자 테마 색상 및 스티커 실시간 동기화)
+    let syncInterval = null;
+    function startAutoSync() {
+        if (syncInterval) clearInterval(syncInterval);
+        syncInterval = setInterval(async () => {
+            if (!document.hidden && currentBoardId) {
+                const rawStickers = await apiGetStickers(currentBoardId);
+                const themeMeta = rawStickers.find(s => s.sticker_index === 999);
+                if (themeMeta && themeMeta.memo) {
+                    const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
+                    if (match) {
+                        const remoteColor = match[1];
+                        const localColor = localStorage.getItem(`board_theme_color_${currentBoardId}`);
+                        if (remoteColor !== localColor) {
+                            localStorage.setItem(`board_theme_color_${currentBoardId}`, remoteColor);
+                            if (currentBoard) currentBoard.theme_color = remoteColor;
+                            applyThemeColor(remoteColor, false);
+                        }
                     }
                 }
             }
-        }
-    }, 3000);
-}
+        }, 3000);
+    }
 
     // 탭 전환 시(앱으로 다시 돌아왔을 때) 1회 자동 동기화
     document.addEventListener("visibilitychange", () => {

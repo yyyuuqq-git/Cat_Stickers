@@ -468,6 +468,16 @@
     }
 
     // 전역 네임스페이스 등록
+    const CatStickersModule = {
+        PRAISE_STICKERS,
+        STICKER_THEMES,
+        normalizeStickerTheme,
+        getThemeVectorGraphic,
+        getThemeStickerMarkup,
+        renderThemePreviewBar
+    };
+
+    global.CatStickersModule = CatStickersModule;
     global.PRAISE_STICKERS = PRAISE_STICKERS;
     global.STICKER_THEMES = STICKER_THEMES;
     global.normalizeStickerTheme = normalizeStickerTheme;
