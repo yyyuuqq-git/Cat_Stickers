@@ -5,22 +5,22 @@
 (function(global) {
     'use strict';
 
-    // 1. 고양이 기본 5종 칭찬 스티커 컬렉션 (추후 사용자 이미지 업로드 지원)
+    // 1. 고양이 기본 5종 칭찬 스티커 컬렉션 (image 폴더의 고양이 이미지 5종)
     const PRAISE_STICKERS = [
-        { id: 0, name: "치즈냥이", emoji: "🐱", src: "stickers/cat1.png", desc: "호기심 가득 사랑스러운 치즈태비" },
-        { id: 1, name: "삼색이", emoji: "😸", src: "stickers/cat2.png", desc: "행운을 물어다 주는 귀여운 삼색고양이" },
-        { id: 2, name: "턱시도냥", emoji: "🐈‍⬛", src: "stickers/cat3.png", desc: "단정하고 의젓한 매력의 턱시도냥이" },
-        { id: 3, name: "하얀냥이", emoji: "🤍", src: "stickers/cat4.png", desc: "보송보송 솜뭉치 순백의 흰고양이" },
-        { id: 4, name: "핑크냥발", emoji: "🐾", src: "stickers/cat5.png", desc: "만지면 말랑말랑 분홍 젤리 냥발" }
+        { id: 0, src: "image/image_1.png", emoji: "🐱" },
+        { id: 1, src: "image/image_2.png", emoji: "🐱" },
+        { id: 2, src: "image/image_3.png", emoji: "🐱" },
+        { id: 3, src: "image/image_4.png", emoji: "🐱" },
+        { id: 4, src: "image/image_5.png", emoji: "🐱" }
     ];
 
     // 2. 테마 컬렉션 정의
     const STICKER_THEMES = {
         cat: {
             id: "cat",
-            name: "귀여운 고양이 친구들 🐾",
+            name: "고양이 칭찬 스티커 🐾",
             themeColor: "#F97316",
-            desc: "사랑스럽고 포근한 고양이 5종 스티커 테마",
+            desc: "사랑스럽고 포근한 고양이 5종 스티커",
             items: PRAISE_STICKERS
         },
         cat_playful: {
@@ -437,20 +437,15 @@
     // ==========================================
     function getThemeStickerMarkup(theme, type) {
         const id = Math.abs(Number(type) || 0) % 5;
-        const safeTheme = normalizeStickerTheme(theme);
-        const vectorSvg = getThemeVectorGraphic(safeTheme, id);
+        const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
+        const src = item ? item.src : `image/image_${id + 1}.png`;
+        const vectorSvg = getThemeVectorGraphic("cat", id);
 
-        if (safeTheme === "cat") {
-            const item = PRAISE_STICKERS[id];
-            // 실제 이미지 파일 로딩 시도 -> 파일이 없거나 오류 발생 시 onerror로 내장 SVG 즉각 표시
-            return `
-                <img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false"
-                     onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" />
-                <svg viewBox="0 0 100 100" class="sticker-svg-vector praise-sticker-img active" aria-hidden="true" style="display:none;">${vectorSvg}</svg>
-            `;
-        }
-
-        return `<svg viewBox="0 0 100 100" class="sticker-svg-vector praise-sticker-img active" aria-hidden="true">${vectorSvg}</svg>`;
+        return `
+            <img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false"
+                 onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" />
+            <svg viewBox="0 0 100 100" class="sticker-svg-vector praise-sticker-img active" aria-hidden="true" style="display:none;">${vectorSvg}</svg>
+        `;
     }
 
     // ==========================================
@@ -459,18 +454,14 @@
     function renderThemePreviewBar(container, theme) {
         const target = typeof container === "string" ? document.getElementById(container) : container;
         if (!target) return;
-        const safeTheme = normalizeStickerTheme(theme);
-        const themeObj = STICKER_THEMES[safeTheme] || STICKER_THEMES.cat;
-
         target.innerHTML = "";
-        themeObj.items.forEach((item, idx) => {
+        PRAISE_STICKERS.forEach((item, idx) => {
             const previewEl = document.createElement("div");
             previewEl.className = "theme-preview-item";
             previewEl.innerHTML = `
                 <div class="theme-preview-icon">
-                    ${getThemeStickerMarkup(safeTheme, idx)}
+                    ${getThemeStickerMarkup("cat", idx)}
                 </div>
-                <span class="theme-preview-name">${item.name}</span>
             `;
             target.appendChild(previewEl);
         });

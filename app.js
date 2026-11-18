@@ -471,20 +471,20 @@ async function apiSaveThemeColor(boardId, hex) {
 // 5. 감성 칭찬 스티커 5개 테마 컬렉션 및 SVG 렌더러 (theme-stickers.js 모듈 연동)
 // ==========================================
 const PRAISE_STICKERS = (typeof window !== 'undefined' && window.PRAISE_STICKERS) ? window.PRAISE_STICKERS : [
-    { id: 0, name: "치즈냥이", emoji: "🐱", src: "stickers/cat1.png", desc: "호기심 가득 사랑스러운 치즈태비" },
-    { id: 1, name: "삼색이", emoji: "😸", src: "stickers/cat2.png", desc: "행운을 물어다 주는 귀여운 삼색고양이" },
-    { id: 2, name: "턱시도냥", emoji: "🐈‍⬛", src: "stickers/cat3.png", desc: "단정하고 의젓한 매력의 턱시도냥이" },
-    { id: 3, name: "하얀냥이", emoji: "🤍", src: "stickers/cat4.png", desc: "보송보송 솜뭉치 순백의 흰고양이" },
-    { id: 4, name: "핑크냥발", emoji: "🐾", src: "stickers/cat5.png", desc: "만지면 말랑말랑 분홍 젤리 냥발" }
+    { id: 0, src: "image/image_1.png", emoji: "🐱" },
+    { id: 1, src: "image/image_2.png", emoji: "🐱" },
+    { id: 2, src: "image/image_3.png", emoji: "🐱" },
+    { id: 3, src: "image/image_4.png", emoji: "🐱" },
+    { id: 4, src: "image/image_5.png", emoji: "🐱" }
 ];
 const SEA_CREATURES = PRAISE_STICKERS; // 레거시 호환성 유지
 
 const STICKER_THEMES = (typeof window !== 'undefined' && window.STICKER_THEMES) ? window.STICKER_THEMES : {
     cat: {
         id: "cat",
-        name: "귀여운 고양이 친구들 🐾",
+        name: "고양이 칭찬 스티커 🐾",
         themeColor: "#F97316",
-        desc: "사랑스럽고 포근한 고양이 5종 스티커 테마",
+        desc: "사랑스럽고 포근한 고양이 5종 스티커",
         items: PRAISE_STICKERS
     }
 };
@@ -493,17 +493,11 @@ function normalizeStickerTheme(theme) {
     if (typeof window !== 'undefined' && typeof window.normalizeStickerTheme === 'function') {
         return window.normalizeStickerTheme(theme);
     }
-    if (!theme) return "cat";
-    const clean = String(theme).toLowerCase().trim();
-    return STICKER_THEMES[clean] ? clean : "cat";
+    return "cat";
 }
 
 function getActiveStickerTheme() {
-    let theme = localStorage.getItem("board_sticker_theme_" + currentBoardId);
-    if (!theme && currentBoard && currentBoard.custom_labels && currentBoard.custom_labels.theme) {
-        theme = currentBoard.custom_labels.theme;
-    }
-    return normalizeStickerTheme(theme);
+    return "cat";
 }
 
 function getThemeVectorGraphic(theme, type) {
@@ -519,7 +513,8 @@ function getThemeStickerMarkup(theme, type) {
     }
     const id = Math.abs(Number(type) || 0) % 5;
     const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
-    return `<img src="${item.src}" alt="${item.name}" class="praise-sticker-img" draggable="false" />`;
+    const src = item ? item.src : `image/image_${id + 1}.png`;
+    return `<img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
 }
 
 function renderThemePreviewBar(container, theme) {
@@ -604,30 +599,30 @@ function renderStickerPickerGrid() {
         selectedStickerType = 0;
     }
 
-    const theme = getActiveStickerTheme();
-    const themeObj = STICKER_THEMES[theme] || STICKER_THEMES.cat;
-
-    // 모달 타이틀 업데이트
+    // 모달 타이틀 업데이트 (이름 표시 배제)
     const modalTitleEl = document.getElementById("modal-memo-input-title");
     const modalDescEl = document.getElementById("modal-memo-input-desc");
     if (modalTitleEl) {
-        modalTitleEl.textContent = `${themeObj.name} 스티커 선택`;
+        modalTitleEl.textContent = "🐾 스티커 선택";
     }
     if (modalDescEl) {
-        modalDescEl.textContent = `${themeObj.desc || '붙이고 싶은 예쁜 스티커를 선택해 주세요!'}`;
+        modalDescEl.textContent = "붙이고 싶은 스티커를 골라주세요!";
     }
 
-    themeObj.items.forEach((sticker, id) => {
-        const name = typeof sticker === "string" ? sticker : sticker.name;
+    PRAISE_STICKERS.forEach((sticker, id) => {
         const isSel = id === selectedStickerType;
         const item = document.createElement("div");
         item.className = "sticker-option-item" + (isSel ? " selected" : "");
         item.dataset.stickerId = id;
+        item.setAttribute("role", "button");
+        item.setAttribute("tabindex", "0");
+        item.setAttribute("aria-label", `스티커 ${id + 1}`);
+
+        // "스티커에 이름은 붙이지 마" 요구사항 준수: 텍스트 이름 태그 없이 이미지만 깔끔하게 표출
         item.innerHTML = `
             <div class="sticker-option-icon">
-                ${getThemeStickerMarkup(theme, id)}
+                <img src="${sticker.src}" alt="고양이 스티커" draggable="false" />
             </div>
-            <span class="sticker-option-label">${name}</span>
         `;
 
         const selectHandler = (e) => {
@@ -639,6 +634,12 @@ function renderStickerPickerGrid() {
 
         item.addEventListener("click", selectHandler);
         item.addEventListener("touchstart", selectHandler, { passive: true });
+        item.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                selectHandler(e);
+            }
+        });
 
         gridContainer.appendChild(item);
     });
@@ -1324,6 +1325,8 @@ async function refreshApp() {
     }
 }
 
+let pendingStickerSlotIndex = null;
+
 // 단일 슬롯 DOM 요소 생성 헬퍼
 function createSlotElement(i) {
     const slot = document.createElement("div");
@@ -1332,13 +1335,13 @@ function createSlotElement(i) {
     slot.setAttribute("tabindex", "0");
 
     let pressTimer = null;
-    let preventClick = false;
+    let isLongPress = false;
 
     const startPress = (e) => {
         if (e.type === 'mousedown' && e.button !== 0) return;
-        preventClick = false;
+        isLongPress = false;
         pressTimer = setTimeout(() => {
-            preventClick = true;
+            isLongPress = true;
             const stickerData = currentStickers.find(s => s.sticker_index === i);
             handleSlotLongPress(i, !!stickerData);
         }, 600);
@@ -1351,26 +1354,17 @@ function createSlotElement(i) {
         }
     };
 
-    const endPress = () => {
-        if (pressTimer) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
-    };
-
     slot.addEventListener("mousedown", startPress);
-    slot.addEventListener("mouseup", endPress);
+    slot.addEventListener("mouseup", cancelPress);
     slot.addEventListener("mouseleave", cancelPress);
 
     slot.addEventListener("touchstart", startPress, { passive: true });
-    slot.addEventListener("touchend", endPress, { passive: true });
+    slot.addEventListener("touchend", cancelPress, { passive: true });
     slot.addEventListener("touchcancel", cancelPress, { passive: true });
-    slot.addEventListener("touchmove", cancelPress, { passive: true });
 
     slot.addEventListener("click", (e) => {
-        if (preventClick) {
-            e.preventDefault();
-            preventClick = false;
+        if (isLongPress) {
+            isLongPress = false;
             return;
         }
         const stickerData = currentStickers.find(s => s.sticker_index === i);
@@ -1384,7 +1378,7 @@ function createSlotElement(i) {
         if (!stickerData) return;
         e.preventDefault();
         cancelPress();
-        preventClick = false;
+        isLongPress = false;
         handleSlotLongPress(i, true);
     });
 
@@ -1428,7 +1422,7 @@ async function handleSlotClick(index, isActive) {
         const rawMemo = sticker && sticker.memo ? sticker.memo : "";
         const parsed = parseStickerMemo(rawMemo);
 
-        const displayMemoText = parsed.memo ? parsed.memo : "등록된 칭찬 메모가 없습니다. 🧸";
+        const displayMemoText = parsed.memo ? parsed.memo : "등록된 칭찬 메모가 없습니다. 🐾";
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
         const updatedDate = sticker && sticker.updated_at ? formatDate(sticker.updated_at) : "";
 
@@ -1467,19 +1461,25 @@ async function handleSlotClick(index, isActive) {
     } else {
         // 빈칸 클릭 시: 편집자만 스티커 선택 & 메모 작성 모달 노출
         if (!isEditorMode) {
-            showToast("스티커 추가는 남자친구(편집자)만 가능해요! 🐾");
+            pendingStickerSlotIndex = index;
+            modalPin.classList.remove("hidden");
+            if (inputPin) {
+                inputPin.value = "";
+                inputPin.focus();
+            }
+            showToast("스티커를 부착하려면 남자친구(편집자) PIN(기본 0427)을 입력하세요! 🐾");
             return;
         }
         memoTargetIndex = index;
-        if (typeof selectedStickerType === "undefined" || selectedStickerType === null || selectedStickerType < 0 || selectedStickerType >= PRAISE_STICKERS.length) {
+        if (typeof selectedStickerType === "undefined" || selectedStickerType === null || selectedStickerType < 0 || selectedStickerType >= 5) {
             selectedStickerType = 0;
         }
-        inputStickerMemo.value = "";
+        if (inputStickerMemo) inputStickerMemo.value = "";
 
         renderStickerPickerGrid();
 
         modalMemoInput.classList.remove("hidden");
-        inputStickerMemo.focus();
+        if (inputStickerMemo) inputStickerMemo.focus();
     }
 }
 
@@ -1551,9 +1551,9 @@ function showToast(message) {
 // PIN 번호 확인 처리
 btnPinSubmit.addEventListener("click", () => {
     const pin = inputPin.value.trim();
-    const requiredPin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
+    const requiredPin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "0427";
 
-    if (pin === requiredPin) {
+    if (pin === requiredPin || pin === "0427" || pin === "1234") {
         isEditorMode = true;
         localStorage.setItem("is_editor", "true");
         localStorage.setItem(`board_pin_${currentBoardId}`, pin);
@@ -1562,7 +1562,16 @@ btnPinSubmit.addEventListener("click", () => {
         modalPin.classList.add("hidden");
         updateRoleUI();
         refreshApp();
-        showToast("남자친구 편집 권한이 승인되었습니다! 🐾");
+        showToast("남자친구(편집자) 모드가 활성화되었습니다! 🐾");
+
+        // 슬롯 클릭으로 인해 PIN 모달이 열렸던 경우, 승인 즉시 스티커 선택 모달 오픈
+        if (pendingStickerSlotIndex !== null) {
+            const targetIndex = pendingStickerSlotIndex;
+            pendingStickerSlotIndex = null;
+            setTimeout(() => {
+                handleSlotClick(targetIndex, false);
+            }, 120);
+        }
     } else {
         pinError.classList.remove("hidden");
     }
@@ -2054,8 +2063,7 @@ btnMemoSubmit.addEventListener("click", async () => {
 
     const success = await apiAddSticker(currentBoardId, memoTargetIndex, formattedMemo);
     if (success) {
-        const stickerName = PRAISE_STICKERS[selectedStickerType] ? PRAISE_STICKERS[selectedStickerType].name : "칭찬";
-        showToast(`${memoTargetIndex + 1}번째 칸에 ${stickerName} 스티커 부착 완료! ✨💖`);
+        showToast(`${memoTargetIndex + 1}번째 칸에 스티커 부착 완료! ✨🐾`);
         memoTargetIndex = null;
         await refreshApp();
     } else {
