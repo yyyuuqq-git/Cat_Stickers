@@ -1509,6 +1509,9 @@ function updateRoleUI() {
         if (roleIcon) roleIcon.textContent = "edit";
         if (roleText) roleText.textContent = globalEditorName || (currentBoard && currentBoard.editor_role_name) || "남자친구 모드 (부착 가능)";
 
+        // 편집자 권한일 때만 새 스티커판 만들기 버튼 노출
+        if (btnAddBoardSidebar) btnAddBoardSidebar.classList.remove("hidden");
+
         // 설정 모달 내 필드 활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = false);
         btnSettingsSave.classList.remove("hidden");
@@ -1516,6 +1519,9 @@ function updateRoleUI() {
         if (btnToggleRole) btnToggleRole.className = "sidebar-role-btn reader-mode";
         if (roleIcon) roleIcon.textContent = "visibility";
         if (roleText) roleText.textContent = globalReaderName || (currentBoard && currentBoard.reader_role_name) || "여자친구 모드 (조회 전용)";
+
+        // 조회자 모드에서는 새 스티커판 만들기 버튼 숨김
+        if (btnAddBoardSidebar) btnAddBoardSidebar.classList.add("hidden");
 
         // 설정 모달 내 필드 비활성화
         document.querySelectorAll(".editor-only-field").forEach(el => el.disabled = true);
@@ -1583,9 +1589,12 @@ btnToggleRole.addEventListener("click", () => {
 });
 
 // 새 칭찬판 만들기 다이얼로그 노출
-// 새 칭찬판 만들기 다이얼로그 노출
 if (btnShare) {
     btnShare.addEventListener("click", () => {
+        if (!isEditorMode) {
+            showToast("새 스티커판 만들기는 편집자(남자친구)만 가능해요! 🔒");
+            return;
+        }
         modalShare.classList.remove("hidden");
         inputCreateBoardTitle.value = "";
         const activeTheme = getActiveStickerTheme();
@@ -1604,6 +1613,11 @@ btnShareClose.addEventListener("click", () => {
 
 // 새로운 칭찬판 생성 (백그라운드에서 난수 코드 자동 생성 및 대조)
 btnCreateBoard.addEventListener("click", async () => {
+    if (!isEditorMode) {
+        showToast("새 스티커판 만들기는 편집자(남자친구)만 가능해요! 🔒");
+        modalShare.classList.add("hidden");
+        return;
+    }
     const titleVal = inputCreateBoardTitle.value.trim();
     const finalTitle = titleVal || "우리의 새로운 칭찬판 💖";
 
@@ -2299,6 +2313,10 @@ function initializeApp() {
 
     if (btnAddBoardSidebar) {
         btnAddBoardSidebar.addEventListener("click", () => {
+            if (!isEditorMode) {
+                showToast("새 스티커판 만들기는 편집자(남자친구)만 가능해요! 🔒");
+                return;
+            }
             sidebar.classList.remove("open");
             sidebarOverlay.classList.add("hidden");
 
