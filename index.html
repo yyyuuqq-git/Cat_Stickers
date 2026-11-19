@@ -23,7 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- 커스텀 CSS -->
-    <link rel="stylesheet" href="style.css?v=1.0.2-cat">
+    <link rel="stylesheet" href="style.css?v=1.0.3-cat">
 </head>
 
 <body>
@@ -100,6 +100,15 @@
                 <div class="form-group">
                     <label for="setup-title">칭찬판 제목</label>
                     <input type="text" id="setup-title" placeholder="예: 야옹이 칭찬판 💖">
+                </div>
+
+                <div class="form-group">
+                    <label for="setup-board-theme">스티커 종류 선택</label>
+                    <select id="setup-board-theme">
+                        <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
+                        <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                    </select>
+                    <div id="setup-theme-preview-bar" class="theme-sticker-preview-bar" style="margin-top: 8px;"></div>
                 </div>
 
                 <div class="form-group">
@@ -203,17 +212,12 @@
                         placeholder="예: 고양이 칭찬판, 야옹이 칭찬나라" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="edit-sticker-theme">스티커 테마</label>
+                    <label for="edit-sticker-theme">스티커 종류 선택</label>
                     <select id="edit-sticker-theme" class="editor-only-field" disabled>
-                        <option value="cat">귀여운 고양이 친구들 🐾 (기본)</option>
-                        <option value="cat_playful">장난꾸러기 냥이 🧶</option>
-                        <option value="moon">달빛 친구들 🌙</option>
-                        <option value="ocean">푸른 바다 친구들 🌊</option>
-                        <option value="forest">초록 숲 친구들 🌿</option>
-                        <option value="star">우주 별빛 친구들 ✨</option>
-                        <option value="pastel">달콤 파스텔 친구들 🌸</option>
+                        <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
+                        <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
                     </select>
-                    <small class="helper-text">이 보드의 스티커 모양과 분위기를 바꿉니다.</small>
+                    <small class="helper-text">이 보드의 스티커 종류를 변경합니다.</small>
                     <!-- 테마 스티커 5종 실시간 미리보기 -->
                     <div id="theme-sticker-preview-bar" class="theme-sticker-preview-bar"></div>
                 </div>
@@ -264,15 +268,10 @@
             </div>
 
             <div class="form-group" style="margin-top: 12px;">
-                <label for="create-board-theme" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">스티커 테마 선택</label>
+                <label for="create-board-theme" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">스티커 종류 선택</label>
                 <select id="create-board-theme">
-                    <option value="cat">귀여운 고양이 친구들 🐾 (기본)</option>
-                    <option value="cat_playful">장난꾸러기 냥이 🧶</option>
-                    <option value="moon">달빛 친구들 🌙</option>
-                    <option value="ocean">푸른 바다 친구들 🌊</option>
-                    <option value="forest">초록 숲 친구들 🌿</option>
-                    <option value="star">우주 별빛 친구들 ✨</option>
-                    <option value="pastel">달콤 파스텔 친구들 🌸</option>
+                    <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
+                    <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
                 </select>
                 <div id="create-theme-preview-bar" class="theme-sticker-preview-bar"></div>
             </div>
@@ -351,6 +350,14 @@
             <div class="form-group" style="margin-top: 12px;">
                 <label for="edit-board-reward">달성 완료 보상</label>
                 <input type="text" id="edit-board-reward" class="editor-only-field" disabled>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label for="edit-board-theme">스티커 종류</label>
+                <select id="edit-board-theme" class="editor-only-field" disabled>
+                    <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
+                    <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                </select>
+                <div id="edit-board-theme-preview-bar" class="theme-sticker-preview-bar" style="margin-top: 8px;"></div>
             </div>
 
             <div class="modal-actions" style="margin-top: 24px;">
@@ -442,8 +449,8 @@
     <div id="toast" class="toast hidden"></div>
 
     <!-- 커스텀 JS -->
-    <script src="theme-stickers.js?v=1.0.2-cat"></script>
-    <script src="app.js?v=1.0.2-cat"></script>
+    <script src="theme-stickers.js?v=1.0.3-cat"></script>
+    <script src="app.js?v=1.0.3-cat"></script>
 </body>
 
 </html>

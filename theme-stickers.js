@@ -1,112 +1,62 @@
 // ==========================================
-// 고양이 칭찬나라 7종 테마 & SVG 벡터 컬렉션 모듈
+// 고양이 칭찬판 2종 스티커 컬렉션 (칭찬 스티커 & 맴매 스티커)
 // ==========================================
 
 (function(global) {
     'use strict';
 
-    // 1. 고양이 기본 5종 칭찬 스티커 컬렉션 (image 폴더의 고양이 이미지 5종)
+    // 1. 고양이 칭찬 스티커 5종 (image1 폴더의 고양이 이미지 5종)
     const PRAISE_STICKERS = [
-        { id: 0, src: "image/image_1.png", emoji: "🐱" },
-        { id: 1, src: "image/image_2.png", emoji: "🐱" },
-        { id: 2, src: "image/image_3.png", emoji: "🐱" },
-        { id: 3, src: "image/image_4.png", emoji: "🐱" },
-        { id: 4, src: "image/image_5.png", emoji: "🐱" }
+        { id: 0, src: "image1/image_1.png", fallbackSrc: "image/image_1.png", emoji: "🐱" },
+        { id: 1, src: "image1/image_2.png", fallbackSrc: "image/image_2.png", emoji: "🐱" },
+        { id: 2, src: "image1/image_3.png", fallbackSrc: "image/image_3.png", emoji: "🐱" },
+        { id: 3, src: "image1/image_4.png", fallbackSrc: "image/image_4.png", emoji: "🐱" },
+        { id: 4, src: "image1/image_5.png", fallbackSrc: "image/image_5.png", emoji: "🐱" }
     ];
 
-    // 2. 테마 컬렉션 정의
+    // 2. 고양이 맴매 스티커 5종 (image2 폴더의 고양이 이미지 5종)
+    const PUNISH_STICKERS = [
+        { id: 0, src: "image2/image_1.png", fallbackSrc: "stickers2/image_1.png", emoji: "🐾" },
+        { id: 1, src: "image2/image_2.png", fallbackSrc: "stickers2/image_2.png", emoji: "🐾" },
+        { id: 2, src: "image2/image_3.png", fallbackSrc: "stickers2/image_3.png", emoji: "🐾" },
+        { id: 3, src: "image2/image_4.png", fallbackSrc: "stickers2/image_4.png", emoji: "🐾" },
+        { id: 4, src: "image2/image_5.png", fallbackSrc: "stickers2/image_5.png", emoji: "🐾" }
+    ];
+
+    // 3. 테마 컬렉션 정의
     const STICKER_THEMES = {
-        cat: {
-            id: "cat",
-            name: "고양이 칭찬 스티커 🐾",
+        praise: {
+            id: "praise",
+            name: "칭찬 스티커 🐾",
             themeColor: "#F97316",
-            desc: "사랑스럽고 포근한 고양이 5종 스티커",
+            desc: "착하고 예쁜 일을 했을 때 붙이는 고양이 칭찬 스티커",
             items: PRAISE_STICKERS
         },
-        cat_playful: {
-            id: "cat_playful",
-            name: "장난꾸러기 냥이 🧶",
-            themeColor: "#EC4899",
-            desc: "놀기 좋아하는 발랄한 장난꾸러기 고양이 테마",
-            items: [
-                { id: 0, name: "식빵 냥이", emoji: "🍞", desc: "따끈따끈 귀엽게 식빵 굽는 고양이" },
-                { id: 1, name: "털실 냥이", emoji: "🧶", desc: "알록달록 털실 굴리며 노는 고양이" },
-                { id: 2, name: "츄르 냥이", emoji: "🐟", desc: "맛있는 간식 츄르 먹고 행복한 냥이" },
-                { id: 3, name: "상자 냥이", emoji: "📦", desc: "종이 상자에 쏙 들어간 호기심 냥이" },
-                { id: 4, name: "하트 냥이", emoji: "💖", desc: "골골송 부르며 꾹꾹이하는 사랑 냥이" }
-            ]
-        },
-        moon: {
-            id: "moon",
-            name: "달빛 친구들 🌙",
-            themeColor: "#4A5568",
-            desc: "고요하고 은은한 달빛과 밤하늘 테마",
-            items: [
-                { id: 0, name: "초승달", emoji: "🌙", desc: "은은하고 고요한 달빛 초승달" },
-                { id: 1, name: "태양", emoji: "☀️", desc: "세상을 환히 비추는 포근한 태양" },
-                { id: 2, name: "가오리", emoji: "🌊", desc: "밤하늘 은하수를 유영하는 하늘가오리" },
-                { id: 3, name: "파도", emoji: "🌊", desc: "별빛을 머금은 잔잔한 파도" },
-                { id: 4, name: "고래", emoji: "🐋", desc: "꿈과 희망을 품은 밤하늘 고래" }
-            ]
-        },
-        ocean: {
-            id: "ocean",
-            name: "푸른 바다 친구들 🌊",
-            themeColor: "#0284C7",
-            desc: "시원하고 맑은 깊은 바닷속 친구들",
-            items: [
-                { id: 0, name: "대왕 고래", emoji: "🐋", desc: "시원하게 물뿜는 든든한 대왕고래" },
-                { id: 1, name: "아기 돌고래", emoji: "🐬", desc: "경쾌하게 수면 위로 점프하는 돌고래" },
-                { id: 2, name: "바다 거북", emoji: "🐢", desc: "느긋하고 행운 가득한 바다거북" },
-                { id: 3, name: "반짝 불가사리", emoji: "⭐", desc: "따뜻한 산호빛 코랄 불가사리" },
-                { id: 4, name: "영롱 해파리", emoji: "🪼", desc: "신비롭고 우아하게 춤추는 해파리" }
-            ]
-        },
-        forest: {
-            id: "forest",
-            name: "초록 숲 친구들 🌿",
-            themeColor: "#059669",
-            desc: "싱그럽고 포근한 자연과 숲속 친구들",
-            items: [
-                { id: 0, name: "행운 클로버", emoji: "🍀", desc: "행운을 가득 전하는 네잎클로버" },
-                { id: 1, name: "도토리 다람쥐", emoji: "🐿️", desc: "도토리를 든 볼빵빵 귀여운 다람쥐" },
-                { id: 2, name: "요정 버섯", emoji: "🍄", desc: "동화 속 붉은 땡땡이 요정 버섯" },
-                { id: 3, name: "봄빛 튤립", emoji: "🌷", desc: "화사하게 활짝 핀 코랄 핑크 튤립" },
-                { id: 4, name: "아기 새싹", emoji: "🌱", desc: "희망차게 돋아난 싱그런 아기 새싹" }
-            ]
-        },
-        star: {
-            id: "star",
-            name: "우주 별빛 친구들 ✨",
-            themeColor: "#7C3AED",
-            desc: "반짝이는 별과 신비로운 우주 탐험",
-            items: [
-                { id: 0, name: "신비 행성", emoji: "🪐", desc: "오로라 고리를 품은 신비로운 토성" },
-                { id: 1, name: "황금 유성", emoji: "🌠", desc: "소원을 이루어주는 빛나는 별똥별" },
-                { id: 2, name: "탐험 로켓", emoji: "🚀", desc: "꿈을 향해 힘차게 솟구치는 우주선" },
-                { id: 3, name: "젤리 우주인", emoji: "👾", desc: "동글동글 귀여운 민트빛 우주 친구" },
-                { id: 4, name: "은하수 별", emoji: "🌟", desc: "8방향으로 찬란하게 빛나는 크리스탈 별" }
-            ]
-        },
-        pastel: {
-            id: "pastel",
-            name: "달콤 파스텔 친구들 🌸",
-            themeColor: "#DB2777",
-            desc: "달콤하고 사랑스러운 핑크 파스텔 테마",
-            items: [
-                { id: 0, name: "솜사탕 구름", emoji: "☁️", desc: "무지개 빗방울을 머금은 핑크 구름" },
-                { id: 1, name: "포근 곰인형", emoji: "🧸", desc: "따뜻한 위로를 건네는 테디베어" },
-                { id: 2, name: "하트 롤리팝", emoji: "🍭", desc: "달콤한 사랑 가득 하트 막대사탕" },
-                { id: 3, name: "달콤 마카롱", emoji: "🧁", desc: "폭신폭신 부드러운 딸기 크림 마카롱" },
-                { id: 4, name: "사랑의 리본", emoji: "🎀", desc: "선물처럼 예쁘게 묶인 핑크 실크 리본" }
-            ]
+        punish: {
+            id: "punish",
+            name: "맴매 스티커 💢",
+            themeColor: "#E11D48",
+            desc: "장난치거나 말썽부렸을 때 붙이는 고양이 맴매 스티커",
+            items: PUNISH_STICKERS
         }
     };
 
+    // 레거시 키 및 별칭 매핑
+    STICKER_THEMES.cat = STICKER_THEMES.praise;
+    STICKER_THEMES.image1 = STICKER_THEMES.praise;
+    STICKER_THEMES.stickers1 = STICKER_THEMES.praise;
+    STICKER_THEMES.maemmae = STICKER_THEMES.punish;
+    STICKER_THEMES.cat_playful = STICKER_THEMES.punish;
+    STICKER_THEMES.image2 = STICKER_THEMES.punish;
+    STICKER_THEMES.stickers2 = STICKER_THEMES.punish;
+
     function normalizeStickerTheme(theme) {
-        if (!theme) return "cat";
-        const clean = String(theme).toLowerCase().trim();
-        return Object.prototype.hasOwnProperty.call(STICKER_THEMES, clean) ? clean : "cat";
+        if (!theme) return "praise";
+        const str = String(theme).trim().toLowerCase();
+        if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매")) {
+            return "punish";
+        }
+        return "praise";
     }
 
     // ==========================================
@@ -436,13 +386,17 @@
     // 스티커 HTML 마크업 생성기 (이미지 및 SVG 자동 폴백 지원)
     // ==========================================
     function getThemeStickerMarkup(theme, type) {
+        const safeTheme = normalizeStickerTheme(theme);
         const id = Math.abs(Number(type) || 0) % 5;
-        const item = PRAISE_STICKERS[id] || PRAISE_STICKERS[0];
-        const src = item ? item.src : `image/image_${id + 1}.png`;
-        const vectorSvg = getThemeVectorGraphic("cat", id);
+        const themeObj = STICKER_THEMES[safeTheme] || STICKER_THEMES.praise;
+        const item = (themeObj && themeObj.items && themeObj.items[id]) ? themeObj.items[id] : null;
+        const folder = safeTheme === "punish" ? "image2" : "image1";
+        const src = item && item.src ? item.src : `${folder}/image_${id + 1}.png`;
+        const altText = safeTheme === "punish" ? "고양이 맴매 스티커" : "고양이 칭찬 스티커";
+        const vectorSvg = getThemeVectorGraphic(safeTheme === "punish" ? "cat_playful" : "cat", id);
 
         return `
-            <img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false"
+            <img src="${src}" alt="${altText}" class="praise-sticker-img" draggable="false"
                  onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" />
             <svg viewBox="0 0 100 100" class="sticker-svg-vector praise-sticker-img active" aria-hidden="true" style="display:none;">${vectorSvg}</svg>
         `;
@@ -455,12 +409,16 @@
         const target = typeof container === "string" ? document.getElementById(container) : container;
         if (!target) return;
         target.innerHTML = "";
-        PRAISE_STICKERS.forEach((item, idx) => {
+        const safeTheme = normalizeStickerTheme(theme);
+        const themeObj = STICKER_THEMES[safeTheme] || STICKER_THEMES.praise;
+        const items = (themeObj && themeObj.items) ? themeObj.items : PRAISE_STICKERS;
+
+        items.forEach((item, idx) => {
             const previewEl = document.createElement("div");
             previewEl.className = "theme-preview-item";
             previewEl.innerHTML = `
                 <div class="theme-preview-icon">
-                    ${getThemeStickerMarkup("cat", idx)}
+                    ${getThemeStickerMarkup(safeTheme, idx)}
                 </div>
             `;
             target.appendChild(previewEl);
@@ -470,6 +428,7 @@
     // 전역 네임스페이스 등록
     const CatStickersModule = {
         PRAISE_STICKERS,
+        PUNISH_STICKERS,
         STICKER_THEMES,
         normalizeStickerTheme,
         getThemeVectorGraphic,
@@ -479,6 +438,7 @@
 
     global.CatStickersModule = CatStickersModule;
     global.PRAISE_STICKERS = PRAISE_STICKERS;
+    global.PUNISH_STICKERS = PUNISH_STICKERS;
     global.STICKER_THEMES = STICKER_THEMES;
     global.normalizeStickerTheme = normalizeStickerTheme;
     global.getThemeVectorGraphic = getThemeVectorGraphic;

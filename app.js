@@ -126,6 +126,7 @@ const modalBoardEdit = document.getElementById("modal-board-edit");
 const editBoardTitle = document.getElementById("edit-board-title");
 const editBoardTargetCount = document.getElementById("edit-board-target-count");
 const editBoardReward = document.getElementById("edit-board-reward");
+const editBoardTheme = document.getElementById("edit-board-theme");
 const btnBoardEditClose = document.getElementById("btn-board-edit-close");
 const btnBoardEditSave = document.getElementById("btn-board-edit-save");
 
@@ -146,6 +147,7 @@ const setupTitle = document.getElementById("setup-title");
 const setupTargetCount = document.getElementById("setup-target-count");
 const setupReward = document.getElementById("setup-reward");
 const setupPin = document.getElementById("setup-pin");
+const setupBoardTheme = document.getElementById("setup-board-theme");
 const btnSetupSubmit = document.getElementById("btn-setup-submit");
 
 const modalMemoInput = document.getElementById("modal-memo-input");
@@ -470,34 +472,69 @@ async function apiSaveThemeColor(boardId, hex) {
 // ==========================================
 // 5. 감성 칭찬 스티커 5개 테마 컬렉션 및 SVG 렌더러 (theme-stickers.js 모듈 연동)
 // ==========================================
-const PRAISE_STICKERS = (typeof window !== 'undefined' && window.PRAISE_STICKERS) ? window.PRAISE_STICKERS : [
-    { id: 0, src: "image/image_1.png", emoji: "🐱" },
-    { id: 1, src: "image/image_2.png", emoji: "🐱" },
-    { id: 2, src: "image/image_3.png", emoji: "🐱" },
-    { id: 3, src: "image/image_4.png", emoji: "🐱" },
-    { id: 4, src: "image/image_5.png", emoji: "🐱" }
+const PRAISE_STICKERS = (typeof window !== 'undefined' && window.CatStickersModule && window.CatStickersModule.PRAISE_STICKERS) ? window.CatStickersModule.PRAISE_STICKERS : [
+    { id: 0, src: "image1/image_1.png", fallbackSrc: "image/image_1.png", emoji: "🐱" },
+    { id: 1, src: "image1/image_2.png", fallbackSrc: "image/image_2.png", emoji: "🐱" },
+    { id: 2, src: "image1/image_3.png", fallbackSrc: "image/image_3.png", emoji: "🐱" },
+    { id: 3, src: "image1/image_4.png", fallbackSrc: "image/image_4.png", emoji: "🐱" },
+    { id: 4, src: "image1/image_5.png", fallbackSrc: "image/image_5.png", emoji: "🐱" }
+];
+
+const PUNISH_STICKERS = (typeof window !== 'undefined' && window.CatStickersModule && window.CatStickersModule.PUNISH_STICKERS) ? window.CatStickersModule.PUNISH_STICKERS : [
+    { id: 0, src: "image2/image_1.png", fallbackSrc: "stickers2/image_1.png", emoji: "🐾" },
+    { id: 1, src: "image2/image_2.png", fallbackSrc: "stickers2/image_2.png", emoji: "🐾" },
+    { id: 2, src: "image2/image_3.png", fallbackSrc: "stickers2/image_3.png", emoji: "🐾" },
+    { id: 3, src: "image2/image_4.png", fallbackSrc: "stickers2/image_4.png", emoji: "🐾" },
+    { id: 4, src: "image2/image_5.png", fallbackSrc: "stickers2/image_5.png", emoji: "🐾" }
 ];
 const SEA_CREATURES = PRAISE_STICKERS; // 레거시 호환성 유지
 
-const STICKER_THEMES = (typeof window !== 'undefined' && window.STICKER_THEMES) ? window.STICKER_THEMES : {
-    cat: {
-        id: "cat",
-        name: "고양이 칭찬 스티커 🐾",
+const STICKER_THEMES = (typeof window !== 'undefined' && window.CatStickersModule && window.CatStickersModule.STICKER_THEMES) ? window.CatStickersModule.STICKER_THEMES : {
+    praise: {
+        id: "praise",
+        name: "칭찬 스티커 🐾",
         themeColor: "#F97316",
-        desc: "사랑스럽고 포근한 고양이 5종 스티커",
+        desc: "착하고 예쁜 일을 했을 때 붙이는 고양이 칭찬 스티커",
         items: PRAISE_STICKERS
+    },
+    punish: {
+        id: "punish",
+        name: "맴매 스티커 💢",
+        themeColor: "#E11D48",
+        desc: "장난치거나 말썽부렸을 때 붙이는 고양이 맴매 스티커",
+        items: PUNISH_STICKERS
     }
 };
+STICKER_THEMES.cat = STICKER_THEMES.praise;
+STICKER_THEMES.image1 = STICKER_THEMES.praise;
+STICKER_THEMES.stickers1 = STICKER_THEMES.praise;
+STICKER_THEMES.maemmae = STICKER_THEMES.punish;
+STICKER_THEMES.cat_playful = STICKER_THEMES.punish;
+STICKER_THEMES.image2 = STICKER_THEMES.punish;
+STICKER_THEMES.stickers2 = STICKER_THEMES.punish;
 
 function normalizeStickerTheme(theme) {
     if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.normalizeStickerTheme === 'function') {
         return window.CatStickersModule.normalizeStickerTheme(theme);
     }
-    return "cat";
+    if (!theme) return "praise";
+    const str = String(theme).trim().toLowerCase();
+    if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매")) {
+        return "punish";
+    }
+    return "praise";
 }
 
 function getActiveStickerTheme() {
-    return "cat";
+    if (currentBoard) {
+        if (currentBoard.theme) return normalizeStickerTheme(currentBoard.theme);
+        if (currentBoard.custom_labels && currentBoard.custom_labels.theme) {
+            return normalizeStickerTheme(currentBoard.custom_labels.theme);
+        }
+    }
+    const saved = localStorage.getItem(`board_sticker_theme_${currentBoardId}`);
+    if (saved) return normalizeStickerTheme(saved);
+    return "praise";
 }
 
 function getThemeVectorGraphic(theme, type) {
@@ -512,14 +549,20 @@ function getThemeStickerMarkup(theme, type) {
         if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.getThemeStickerMarkup === 'function') {
             return window.CatStickersModule.getThemeStickerMarkup(theme, type);
         }
+        const safeTheme = normalizeStickerTheme(theme);
         const id = Math.abs(Number(type) || 0) % 5;
-        const item = (typeof PRAISE_STICKERS !== 'undefined' && PRAISE_STICKERS[id]) ? PRAISE_STICKERS[id] : null;
-        const src = item && item.src ? item.src : `image/image_${id + 1}.png`;
-        return `<img src="${src}" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
+        const themeObj = (typeof STICKER_THEMES !== 'undefined' && STICKER_THEMES[safeTheme]) ? STICKER_THEMES[safeTheme] : null;
+        const item = (themeObj && themeObj.items && themeObj.items[id]) ? themeObj.items[id] : null;
+        const folder = safeTheme === "punish" ? "image2" : "image1";
+        const src = item && item.src ? item.src : `${folder}/image_${id + 1}.png`;
+        const altText = safeTheme === "punish" ? "고양이 맴매 스티커" : "고양이 칭찬 스티커";
+        return `<img src="${src}" alt="${altText}" class="praise-sticker-img" draggable="false" />`;
     } catch (e) {
         console.warn("getThemeStickerMarkup fallback:", e);
+        const safeTheme = normalizeStickerTheme(theme);
+        const folder = safeTheme === "punish" ? "image2" : "image1";
         const fallbackId = (Math.abs(Number(type) || 0) % 5) + 1;
-        return `<img src="image/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
+        return `<img src="${folder}/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />`;
     }
 }
 
@@ -529,31 +572,33 @@ function renderThemePreviewBar(container, theme) {
     }
 }
 
-async function saveStickerTheme(theme) {
+async function saveStickerTheme(theme, targetBoardId = null) {
+    const boardId = targetBoardId || currentBoardId;
     const value = normalizeStickerTheme(theme);
-    localStorage.setItem(`board_sticker_theme_${currentBoardId}`, value);
-    if (currentBoard) {
+    localStorage.setItem(`board_sticker_theme_${boardId}`, value);
+    if (currentBoard && currentBoard.id === boardId) {
         if (!currentBoard.custom_labels) currentBoard.custom_labels = {};
         currentBoard.custom_labels.theme = value;
+        currentBoard.theme = value;
     }
 
     const now = new Date().toISOString();
     const memo = `[sticker-theme:${value}]`;
     if (isLocalMode || !supabaseClient) {
-        const stickers = await apiGetStickers(currentBoardId);
+        const stickers = await apiGetStickers(boardId);
         const meta = stickers.find(item => item.sticker_index === 998);
         if (meta) {
             Object.assign(meta, { memo, updated_at: now });
         } else {
-            stickers.push({ board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now });
+            stickers.push({ board_id: boardId, sticker_index: 998, memo, created_at: now, updated_at: now });
         }
-        localStorage.setItem(`stickers_${currentBoardId}`, JSON.stringify(stickers));
+        localStorage.setItem(`stickers_${boardId}`, JSON.stringify(stickers));
         return true;
     }
 
     try {
         const { error } = await supabaseClient.from("praise_stickers").upsert(
-            { board_id: currentBoardId, sticker_index: 998, memo, created_at: now, updated_at: now },
+            { board_id: boardId, sticker_index: 998, memo, created_at: now, updated_at: now },
             { onConflict: "board_id,sticker_index" }
         );
         return !error;
@@ -597,10 +642,12 @@ function getSeaCreatureStickerSvg(index, isSticker, rawMemo = "") {
         `;
     } catch (e) {
         console.warn("getSeaCreatureStickerSvg fallback:", e);
+        const theme = getActiveStickerTheme();
+        const folder = theme === "punish" ? "image2" : "image1";
         const fallbackId = (index % 5) + 1;
         return `
             <div class="sticker-img-container active">
-                <img src="image/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />
+                <img src="${folder}/image_${fallbackId}.png" alt="고양이 스티커" class="praise-sticker-img" draggable="false" />
             </div>
         `;
     }
@@ -615,17 +662,21 @@ function renderStickerPickerGrid() {
         selectedStickerType = 0;
     }
 
+    const activeTheme = getActiveStickerTheme();
+    const isPunish = activeTheme === "punish";
+    const stickerList = isPunish ? PUNISH_STICKERS : PRAISE_STICKERS;
+
     // 모달 타이틀 업데이트 (이름 표시 배제)
     const modalTitleEl = document.getElementById("modal-memo-input-title");
     const modalDescEl = document.getElementById("modal-memo-input-desc");
     if (modalTitleEl) {
-        modalTitleEl.textContent = "🐾 스티커 선택";
+        modalTitleEl.textContent = isPunish ? "🐾 맴매 스티커 선택" : "🐾 칭찬 스티커 선택";
     }
     if (modalDescEl) {
-        modalDescEl.textContent = "붙이고 싶은 스티커를 골라주세요!";
+        modalDescEl.textContent = isPunish ? "붙이고 싶은 맴매 스티커를 골라주세요!" : "붙이고 싶은 칭찬 스티커를 골라주세요!";
     }
 
-    PRAISE_STICKERS.forEach((sticker, id) => {
+    stickerList.forEach((sticker, id) => {
         const isSel = id === selectedStickerType;
         const item = document.createElement("div");
         item.className = "sticker-option-item" + (isSel ? " selected" : "");
@@ -637,7 +688,8 @@ function renderStickerPickerGrid() {
         // "스티커에 이름은 붙이지 마" 요구사항 준수: 텍스트 이름 태그 없이 이미지만 깔끔하게 표출
         item.innerHTML = `
             <div class="sticker-option-icon">
-                <img src="${sticker.src}" alt="고양이 스티커" draggable="false" />
+                <img src="${sticker.src}" alt="고양이 스티커" draggable="false"
+                     onerror="this.src='${sticker.fallbackSrc || sticker.src}';" />
             </div>
         `;
 
@@ -773,17 +825,25 @@ async function openBoardEditModal(board) {
         if (editBoardTitle) editBoardTitle.disabled = false;
         if (editBoardTargetCount) editBoardTargetCount.disabled = false;
         if (editBoardReward) editBoardReward.disabled = false;
+        if (editBoardTheme) editBoardTheme.disabled = false;
         if (btnBoardEditSave) btnBoardEditSave.classList.remove("hidden");
     } else {
         if (editBoardTitle) editBoardTitle.disabled = true;
         if (editBoardTargetCount) editBoardTargetCount.disabled = true;
         if (editBoardReward) editBoardReward.disabled = true;
+        if (editBoardTheme) editBoardTheme.disabled = true;
         if (btnBoardEditSave) btnBoardEditSave.classList.add("hidden");
     }
 
     if (editBoardTitle) editBoardTitle.value = fullBoard.title || "";
     if (editBoardTargetCount) editBoardTargetCount.value = fullBoard.target_count || 30;
     if (editBoardReward) editBoardReward.value = fullBoard.reward_text || "";
+
+    const bTheme = fullBoard.theme || (fullBoard.custom_labels && fullBoard.custom_labels.theme) || localStorage.getItem(`board_sticker_theme_${fullBoard.id}`) || "praise";
+    if (editBoardTheme) {
+        editBoardTheme.value = normalizeStickerTheme(bTheme);
+    }
+    renderThemePreviewBar("edit-board-theme-preview-bar", bTheme);
 
     if (modalBoardEdit) {
         modalBoardEdit.classList.remove("hidden");
@@ -955,10 +1015,16 @@ function createBoardItemDOM(board, isLocal) {
         ? `<span class="material-icons drag-handle" title="끌어서 순서 변경" aria-hidden="true">drag_indicator</span>`
         : '';
 
+    const bTheme = board.theme || (board.custom_labels && board.custom_labels.theme) || localStorage.getItem(`board_sticker_theme_${board.id}`) || "praise";
+    const isPunish = normalizeStickerTheme(bTheme) === "punish";
+    const themeBadgeHtml = isPunish
+        ? `<span class="badge-board-theme" style="display:inline-block; font-size:10px; font-weight:700; color:#E11D48; background:#FFE4E6; border-radius:4px; padding:1px 5px; margin-left:4px;">맴매</span>`
+        : `<span class="badge-board-theme" style="display:inline-block; font-size:10px; font-weight:700; color:#EA580C; background:#FFEDD5; border-radius:4px; padding:1px 5px; margin-left:4px;">칭찬</span>`;
+
     item.innerHTML = `
         ${dragHandleHtml}
         <div class="board-item-info">
-            <span class="board-item-title">${escapeHtml(board.title)}</span>
+            <span class="board-item-title">${escapeHtml(board.title)} ${themeBadgeHtml}</span>
             <span class="board-item-code">보상: ${escapeHtml(board.reward_text || '없음')}</span>
         </div>
         <div class="board-item-actions">
@@ -1224,6 +1290,10 @@ async function refreshApp() {
             setupTargetCount.value = "30";
             setupReward.value = "맛있는 츄르 데이트! 🍦";
             setupPin.value = "1234";
+            if (setupBoardTheme) {
+                setupBoardTheme.value = "praise";
+                renderThemePreviewBar("setup-theme-preview-bar", "praise");
+            }
             return;
         }
 
@@ -1251,9 +1321,27 @@ async function refreshApp() {
         // 2. 스티커 정보 로드
         const rawStickers = await apiGetStickers(currentBoardId);
 
-        // 2.5 테마 메타데이터(sticker_index === 999) 감지 및 즉시 적용
+        // 2.4 스티커 테마 메타데이터(sticker_index === 998) 감지 및 즉시 동기화
+        const stickerThemeMeta = rawStickers.find(s => s.sticker_index === 998);
+        let activeStickerTheme = (currentBoard && currentBoard.theme) || (currentBoard && currentBoard.custom_labels && currentBoard.custom_labels.theme) || localStorage.getItem(`board_sticker_theme_${currentBoardId}`) || "praise";
+        if (stickerThemeMeta && stickerThemeMeta.memo) {
+            const match = stickerThemeMeta.memo.match(/\[sticker-theme:([^\]]+)\]/);
+            if (match) {
+                activeStickerTheme = normalizeStickerTheme(match[1]);
+            }
+        }
+        activeStickerTheme = normalizeStickerTheme(activeStickerTheme);
+        localStorage.setItem(`board_sticker_theme_${currentBoardId}`, activeStickerTheme);
+        if (currentBoard) {
+            currentBoard.theme = activeStickerTheme;
+            if (!currentBoard.custom_labels) currentBoard.custom_labels = {};
+            currentBoard.custom_labels.theme = activeStickerTheme;
+        }
+
+        // 2.5 테마 색상 메타데이터(sticker_index === 999) 감지 및 즉시 적용
         const themeMeta = rawStickers.find(s => s.sticker_index === 999);
-        let activeThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#F97316";
+        const defaultColor = activeStickerTheme === "punish" ? "#E11D48" : "#F97316";
+        let activeThemeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || defaultColor;
         if (themeMeta && themeMeta.memo) {
             const match = themeMeta.memo.match(/\[theme:(#[0-9A-Fa-f]{6})\]/);
             if (match) {
@@ -1660,7 +1748,11 @@ btnCreateBoard.addEventListener("click", async () => {
     // 순차적 보드 코드 생성 (마지막 숫자 + 1, 예: 달의 마지막 숫자가 2면 다음은 3)
     const finalCode = await getNextSequentialBoardCode();
 
-    const activeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`) || "#EC4899";
+    const chosenTheme = normalizeStickerTheme((document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "praise");
+    let activeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`);
+    if (!activeColor) {
+        activeColor = chosenTheme === "punish" ? "#E11D48" : "#F97316";
+    }
     const activePin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
 
     const newBoard = {
@@ -1669,10 +1761,12 @@ btnCreateBoard.addEventListener("click", async () => {
         target_count: 30,
         reward_text: "새로운 선물 지정하기",
         editor_pin: activePin,
+        theme: chosenTheme,
+        theme_color: activeColor,
+        custom_labels: { theme: chosenTheme },
         created_at: new Date().toISOString()
     };
 
-    const chosenTheme = (document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "cat";
     const result = await apiCreateBoard(newBoard);
     if (result.success) {
         currentBoardId = finalCode;
@@ -1680,7 +1774,7 @@ btnCreateBoard.addEventListener("click", async () => {
         localStorage.setItem(`board_pin_${finalCode}`, activePin);
         localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
         await apiSaveThemeColor(finalCode, activeColor);
-        await saveStickerTheme(chosenTheme);
+        await saveStickerTheme(chosenTheme, finalCode);
         localStorage.setItem("is_editor", "true");
         inputCreateBoardTitle.value = "";
         isEditorMode = true;
@@ -1964,6 +2058,14 @@ btnSettingsSave.addEventListener("click", async () => {
         editor_role_name: newEditorName || "남자친구 모드 (부착 가능)"
     };
 
+    if (editStickerTheme) {
+        const newTheme = normalizeStickerTheme(editStickerTheme.value);
+        await saveStickerTheme(newTheme, currentBoardId);
+        updated.theme = newTheme;
+        if (!updated.custom_labels) updated.custom_labels = {};
+        updated.custom_labels.theme = newTheme;
+    }
+
     const result = await apiCreateBoard(updated);
     // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
     currentBoard = updated;
@@ -1997,6 +2099,14 @@ btnBoardEditSave.addEventListener("click", async () => {
         target_count: count,
         reward_text: editBoardReward.value.trim()
     };
+
+    if (editBoardTheme) {
+        const selectedTheme = normalizeStickerTheme(editBoardTheme.value);
+        updatedBoard.theme = selectedTheme;
+        if (!updatedBoard.custom_labels) updatedBoard.custom_labels = {};
+        updatedBoard.custom_labels.theme = selectedTheme;
+        await saveStickerTheme(selectedTheme, editTargetBoard.id);
+    }
 
     const result = await apiCreateBoard(updatedBoard);
     // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
@@ -2355,7 +2465,25 @@ function initializeApp() {
             // 공유/생성 모달을 열고 새 보드 생성 인풋에 포커싱
             modalShare.classList.remove("hidden");
             inputCreateBoardTitle.value = "";
+            const activeTheme = getActiveStickerTheme();
+            const createThemeSelect = document.getElementById("create-board-theme");
+            if (createThemeSelect) {
+                createThemeSelect.value = activeTheme;
+            }
+            renderThemePreviewBar("create-theme-preview-bar", activeTheme);
             inputCreateBoardTitle.focus();
+        });
+    }
+
+    if (setupBoardTheme) {
+        setupBoardTheme.addEventListener("change", (e) => {
+            renderThemePreviewBar("setup-theme-preview-bar", e.target.value);
+        });
+    }
+
+    if (editBoardTheme) {
+        editBoardTheme.addEventListener("change", (e) => {
+            renderThemePreviewBar("edit-board-theme-preview-bar", e.target.value);
         });
     }
 
@@ -2387,12 +2515,18 @@ function initializeApp() {
         loadingSpinner.classList.remove("hidden");
         welcomeScreen.classList.add("hidden");
 
+        const chosenTheme = normalizeStickerTheme((setupBoardTheme && setupBoardTheme.value) || "praise");
+        const defaultColor = chosenTheme === "punish" ? "#E11D48" : "#F97316";
+
         const newBoard = {
             id: code,
             title: title,
             target_count: target,
             reward_text: reward,
             editor_pin: pin,
+            theme: chosenTheme,
+            theme_color: defaultColor,
+            custom_labels: { theme: chosenTheme },
             created_at: new Date().toISOString()
         };
 
@@ -2400,6 +2534,10 @@ function initializeApp() {
         if (result.success) {
             currentBoardId = code;
             localStorage.setItem("current_board_id", code);
+            localStorage.setItem(`board_pin_${code}`, pin);
+            localStorage.setItem(`board_theme_color_${code}`, defaultColor);
+            await apiSaveThemeColor(code, defaultColor);
+            await saveStickerTheme(chosenTheme, code);
             localStorage.setItem("is_editor", "true");
             isEditorMode = true;
             updateRoleUI();
