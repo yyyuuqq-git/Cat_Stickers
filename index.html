@@ -23,7 +23,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- 커스텀 CSS -->
-    <link rel="stylesheet" href="style.css?v=1.0.3-cat">
+    <link rel="stylesheet" href="style.css?v=1.0.5-cat">
 </head>
 
 <body>
@@ -81,6 +81,19 @@
         <div id="loading-spinner" class="spinner-container">
             <div class="spinner"></div>
         </div>
+        <script>
+            // 로딩 무한 대기 방지 안전 가드 (최대 3초 후 스피너 자동 해제)
+            setTimeout(function() {
+                var sp = document.getElementById("loading-spinner");
+                if (sp && !sp.classList.contains("hidden")) {
+                    sp.classList.add("hidden");
+                    var ac = document.querySelector(".app-content");
+                    if (ac && (!document.getElementById("welcome-screen") || document.getElementById("welcome-screen").classList.contains("hidden"))) {
+                        ac.classList.remove("hidden");
+                    }
+                }
+            }, 3000);
+        </script>
 
         <!-- 1.5 초기 설정 화면 (처음 접속하거나 새 보드 생성 시 노출) -->
         <div id="welcome-screen" class="welcome-screen hidden">
@@ -105,10 +118,9 @@
                 <div class="form-group">
                     <label for="setup-board-theme">스티커 종류 선택</label>
                     <select id="setup-board-theme">
-                        <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
-                        <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                        <option value="praise">🐱 칭찬 스티커 🐾</option>
+                        <option value="punish">🐾 맴매 스티커 💢</option>
                     </select>
-                    <div id="setup-theme-preview-bar" class="theme-sticker-preview-bar" style="margin-top: 8px;"></div>
                 </div>
 
                 <div class="form-group">
@@ -141,7 +153,7 @@
                 <div id="board-code-display" class="board-code-display">보상: 없음</div>
 
                 <div class="progress-info">
-                    <span class="progress-label">칭찬 스티커 모으기</span>
+                    <span id="progress-label" class="progress-label">칭찬 스티커 모으기</span>
                     <span id="progress-count" class="progress-count">0 / 30 개</span>
                 </div>
 
@@ -154,7 +166,7 @@
             <section id="celebration-banner" class="celebration-banner hidden">
                 <span class="material-icons celebration-icon">celebration</span>
                 <div class="celebration-info">
-                    <h3>축하합니다! 목표를 달성했어요! 🎉</h3>
+                    <h3 id="celebration-title">축하합니다! 목표를 달성했어요! 🎉</h3>
                     <p id="celebration-reward-detail">보상을 획득할 시간이에요! 🎁</p>
                 </div>
             </section>
@@ -174,7 +186,7 @@
     <div id="modal-pin" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 class="modal-title">남자친구 권한 인증</h3>
-            <p class="modal-desc">칭찬스티커를 추가하거나 제거할 수 있는 비밀번호 PIN을 입력하세요.</p>
+            <p class="modal-desc">스티커를 붙이거나 뗄 수 있는 비밀번호 PIN을 입력하세요.</p>
             <div class="form-group">
                 <input type="password" id="input-pin" placeholder="비밀번호 PIN 입력" maxlength="8">
                 <span id="pin-error" class="error-text hidden">비밀번호가 올바르지 않습니다.</span>
@@ -203,9 +215,9 @@
 
             <hr class="divider">
 
-            <!-- 현재 칭찬판 수정 (편집 상태일 때만 활성화) -->
+            <!-- 현재 스티커판 수정 (편집 상태일 때만 활성화) -->
             <div class="settings-section">
-                <h4 class="section-title">⚙️ 칭찬판 보안 및 라벨 설정 <span class="badge-lock">(편집 권한 필요)</span></h4>
+                <h4 class="section-title">⚙️ 스티커판 보안 및 라벨 설정 <span class="badge-lock">(편집 권한 필요)</span></h4>
                 <div class="form-group">
                     <label for="edit-app-title">앱 상단 대제목 (메인 타이틀)</label>
                     <input type="text" id="edit-app-title" class="editor-only-field"
@@ -214,12 +226,10 @@
                 <div class="form-group">
                     <label for="edit-sticker-theme">스티커 종류 선택</label>
                     <select id="edit-sticker-theme" class="editor-only-field" disabled>
-                        <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
-                        <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                        <option value="praise">🐱 칭찬 스티커 🐾</option>
+                        <option value="punish">🐾 맴매 스티커 💢</option>
                     </select>
                     <small class="helper-text">이 보드의 스티커 종류를 변경합니다.</small>
-                    <!-- 테마 스티커 5종 실시간 미리보기 -->
-                    <div id="theme-sticker-preview-bar" class="theme-sticker-preview-bar"></div>
                 </div>
                 <div class="form-group">
                     <label for="edit-pin">편집용 비밀번호 PIN</label>
@@ -259,21 +269,20 @@
     <!-- D. 공유 및 생성 모달 -->
     <div id="modal-share" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">🆕 새 칭찬판 만들기</h3>
-            <p class="modal-desc">새로 만들 칭찬판의 이름과 스티커 테마를 선택해 주세요.</p>
+            <h3 class="modal-title">🆕 새 스티커판 만들기</h3>
+            <p class="modal-desc">새로 만들 스티커판의 이름과 종류를 선택해 주세요.</p>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label for="input-create-board-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">칭찬판 이름</label>
-                <input type="text" id="input-create-board-title" placeholder="칭찬판 이름 (예: 야옹이의 착한 일 판 🐾)">
+                <label for="input-create-board-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">스티커판 이름</label>
+                <input type="text" id="input-create-board-title" placeholder="스티커판 이름 (예: 우리의 약속 판 🐾)">
             </div>
 
             <div class="form-group" style="margin-top: 12px;">
                 <label for="create-board-theme" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">스티커 종류 선택</label>
                 <select id="create-board-theme">
-                    <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
-                    <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                    <option value="praise">🐱 칭찬 스티커 🐾</option>
+                    <option value="punish">🐾 맴매 스티커 💢</option>
                 </select>
-                <div id="create-theme-preview-bar" class="theme-sticker-preview-bar"></div>
             </div>
 
             <div class="modal-actions" style="margin-top: 24px;">
@@ -295,9 +304,9 @@
             </div>
 
             <div class="form-group" style="margin-top: 14px;">
-                <label for="input-sticker-memo"
+                <label for="input-sticker-memo" id="label-sticker-memo"
                     style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: block;">✍️
-                    칭찬 한마디 남기기</label>
+                    잘한 점 남기기</label>
                 <textarea id="input-sticker-memo" placeholder="예: 오늘도 너무 잘했어! 최고야 🐾" rows="2" class="memo-textarea"
                     maxlength="200"></textarea>
             </div>
@@ -311,7 +320,7 @@
     <!-- F. 칭찬 스티커 메모 확인 모달 -->
     <div id="modal-memo-view" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">칭찬 스티커 메모 💌</h3>
+            <h3 id="modal-memo-view-title" class="modal-title">칭찬 스티커 메모 💌</h3>
             <div class="memo-view-content">
                 <p id="view-sticker-memo-text" class="memo-view-text"></p>
                 <div class="memo-dates-container">
@@ -333,14 +342,14 @@
         </div>
     </div>
 
-    <!-- G. 칭찬판 정보 수정 모달 (길게 누를 때 표시) -->
+    <!-- G. 스티커판 정보 수정 모달 (길게 누를 때 표시) -->
     <div id="modal-board-edit" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 class="modal-title">⚙️ 칭찬판 상세 수정</h3>
-            <p class="modal-desc">칭찬판의 제목, 목표 개수, 보상을 수정합니다. <span class="badge-lock">(남자친구 권한 필요)</span></p>
+            <h3 class="modal-title">⚙️ 스티커판 상세 수정</h3>
+            <p class="modal-desc">스티커판의 제목, 목표 개수, 보상을 수정합니다. <span class="badge-lock">(남자친구 권한 필요)</span></p>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label for="edit-board-title">칭찬판 제목</label>
+                <label for="edit-board-title">스티커판 제목</label>
                 <input type="text" id="edit-board-title" class="editor-only-field" disabled>
             </div>
             <div class="form-group" style="margin-top: 12px;">
@@ -354,10 +363,9 @@
             <div class="form-group" style="margin-top: 12px;">
                 <label for="edit-board-theme">스티커 종류</label>
                 <select id="edit-board-theme" class="editor-only-field" disabled>
-                    <option value="praise">🐱 칭찬 스티커 (image1) 🐾</option>
-                    <option value="punish">🐾 맴매 스티커 (image2) 💢</option>
+                    <option value="praise">🐱 칭찬 스티커 🐾</option>
+                    <option value="punish">🐾 맴매 스티커 💢</option>
                 </select>
-                <div id="edit-board-theme-preview-bar" class="theme-sticker-preview-bar" style="margin-top: 8px;"></div>
             </div>
 
             <div class="modal-actions" style="margin-top: 24px;">
@@ -449,8 +457,8 @@
     <div id="toast" class="toast hidden"></div>
 
     <!-- 커스텀 JS -->
-    <script src="theme-stickers.js?v=1.0.3-cat"></script>
-    <script src="app.js?v=1.0.3-cat"></script>
+    <script src="theme-stickers.js?v=1.0.5-cat"></script>
+    <script src="app.js?v=1.0.5-cat"></script>
 </body>
 
 </html>

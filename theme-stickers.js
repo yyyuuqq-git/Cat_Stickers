@@ -68,6 +68,7 @@
         const safeTheme = normalizeStickerTheme(theme);
 
         switch (safeTheme) {
+            case "praise":
             case "cat":
                 switch (safeType) {
                     case 0: // 치즈태비 (치즈냥이)
@@ -264,6 +265,7 @@
                 }
                 break;
 
+            case "punish":
             case "cat_playful":
                 switch (safeType) {
                     case 0: // 식빵 냥이

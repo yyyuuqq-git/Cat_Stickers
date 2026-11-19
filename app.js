@@ -81,6 +81,45 @@ let editTargetIndex = null;
 
 // 3. HTML DOM 요소
 const loadingSpinner = document.getElementById("loading-spinner");
+let loadingSpinnerSafetyTimer = null;
+
+function hideLoadingSpinner() {
+    if (loadingSpinnerSafetyTimer) {
+        clearTimeout(loadingSpinnerSafetyTimer);
+        loadingSpinnerSafetyTimer = null;
+    }
+    if (loadingSpinner) {
+        loadingSpinner.classList.add("hidden");
+    }
+}
+
+function showLoadingSpinner(timeoutMs = 4000) {
+    if (loadingSpinner) {
+        loadingSpinner.classList.remove("hidden");
+    }
+    if (loadingSpinnerSafetyTimer) {
+        clearTimeout(loadingSpinnerSafetyTimer);
+    }
+    // 어떤 네트워크 지연이나 예외 상황에서도 무한로딩에 빠지지 않도록 자동 안전 해제
+    loadingSpinnerSafetyTimer = setTimeout(() => {
+        hideLoadingSpinner();
+        if (appContent && (!welcomeScreen || welcomeScreen.classList.contains("hidden"))) {
+            appContent.classList.remove("hidden");
+        }
+    }, timeoutMs);
+}
+
+// Supabase 비동기 네트워크 통신 지연 방지 래퍼 (최대 4초 타임아웃)
+function withTimeout(promise, ms = 4000) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Network timeout")), ms);
+    });
+    return Promise.race([
+        Promise.resolve(promise).then(res => { clearTimeout(timeoutId); return res; }),
+        timeoutPromise
+    ]);
+}
 const appContent = document.querySelector(".app-content");
 const roleIcon = document.getElementById("role-icon");
 const roleText = document.getElementById("role-text");
@@ -202,11 +241,14 @@ async function apiGetBoard(boardId) {
         return null;
     } else {
         try {
-            const { data, error } = await supabaseClient
-                .from("praise_boards")
-                .select("*")
-                .eq("id", boardId)
-                .maybeSingle();
+            const { data, error } = await withTimeout(
+                supabaseClient
+                    .from("praise_boards")
+                    .select("*")
+                    .eq("id", boardId)
+                    .maybeSingle(),
+                4000
+            );
             if (error) throw error;
             if (data) {
                 // 기존 캐시된 데이터와 병합하여 로컬 전용 설정(역할 이름 등) 보존
@@ -227,6 +269,8 @@ async function apiGetBoard(boardId) {
                 localStorage.setItem(`board_${boardId}`, JSON.stringify(mergedData));
                 return mergedData;
             }
+            const cached = localStorage.getItem(`board_${boardId}`);
+            if (cached) return JSON.parse(cached);
             return null;
         } catch (e) {
             console.error("보드 조회 중 서버 에러 발생, 캐시를 반환합니다.", e);
@@ -307,10 +351,13 @@ async function apiGetStickers(boardId) {
         return localData ? JSON.parse(localData) : [];
     } else {
         try {
-            const { data, error } = await supabaseClient
-                .from("praise_stickers")
-                .select("*")
-                .eq("board_id", boardId);
+            const { data, error } = await withTimeout(
+                supabaseClient
+                    .from("praise_stickers")
+                    .select("*")
+                    .eq("board_id", boardId),
+                4000
+            );
             if (error) throw error;
             localStorage.setItem(`stickers_${boardId}`, JSON.stringify(data));
             return data;
@@ -666,14 +713,24 @@ function renderStickerPickerGrid() {
     const isPunish = activeTheme === "punish";
     const stickerList = isPunish ? PUNISH_STICKERS : PRAISE_STICKERS;
 
-    // 모달 타이틀 업데이트 (이름 표시 배제)
+    // 모달 타이틀 및 안내 문구 업데이트
     const modalTitleEl = document.getElementById("modal-memo-input-title");
     const modalDescEl = document.getElementById("modal-memo-input-desc");
+    const labelMemoEl = document.getElementById("label-sticker-memo");
     if (modalTitleEl) {
         modalTitleEl.textContent = isPunish ? "🐾 맴매 스티커 선택" : "🐾 칭찬 스티커 선택";
     }
     if (modalDescEl) {
         modalDescEl.textContent = isPunish ? "붙이고 싶은 맴매 스티커를 골라주세요!" : "붙이고 싶은 칭찬 스티커를 골라주세요!";
+    }
+    if (labelMemoEl) {
+        labelMemoEl.textContent = isPunish ? "✍️ 잘못한 점 남기기" : "✍️ 잘한 점 남기기";
+    }
+    if (inputStickerMemo) {
+        inputStickerMemo.placeholder = isPunish ? "예: 다음에는 꼭 조심하기! 약속 🐾" : "예: 오늘도 너무 잘했어! 최고야 🐾";
+    }
+    if (btnMemoSubmit) {
+        btnMemoSubmit.textContent = isPunish ? "맴매 스티커 붙이기 🐾" : "칭찬 스티커 붙이기 🐾";
     }
 
     stickerList.forEach((sticker, id) => {
@@ -738,10 +795,13 @@ async function apiGetAllBoards() {
         return boards;
     } else {
         try {
-            const { data, error } = await supabaseClient
-                .from("praise_boards")
-                .select("*")
-                .order("created_at", { ascending: true });
+            const { data, error } = await withTimeout(
+                supabaseClient
+                    .from("praise_boards")
+                    .select("*")
+                    .order("created_at", { ascending: true }),
+                4000
+            );
             if (error) throw error;
             return (data || []).filter(b => isCatBoard(b));
         } catch (e) {
@@ -1041,18 +1101,24 @@ function createBoardItemDOM(board, isLocal) {
         }
         if (isActive) return;
 
-        loadingSpinner.classList.remove("hidden");
+        showLoadingSpinner();
         sidebar.classList.remove("open");
         sidebarOverlay.classList.add("hidden");
 
-        currentBoardId = board.id;
-        localStorage.setItem("current_board_id", currentBoardId);
-        isEditorMode = localStorage.getItem("is_editor") === "true";
-        updateRoleUI();
-        await refreshApp();
+        try {
+            currentBoardId = board.id;
+            localStorage.setItem("current_board_id", currentBoardId);
+            isEditorMode = localStorage.getItem("is_editor") === "true";
+            updateRoleUI();
+            await refreshApp();
 
-        const newUrl = `${window.location.origin}${window.location.pathname}?board=${board.id}`;
-        window.history.replaceState({ path: newUrl }, "", newUrl);
+            const newUrl = `${window.location.origin}${window.location.pathname}?board=${board.id}`;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+        } catch (err) {
+            console.error("보드 전환 오류:", err);
+        } finally {
+            hideLoadingSpinner();
+        }
     });
 
     let pressTimer = null;
@@ -1360,6 +1426,12 @@ async function refreshApp() {
         boardTitle.textContent = currentBoard.title;
         boardCodeDisplay.textContent = `보상: ${currentBoard.reward_text || '없음'}`;
 
+        const isPunish = activeStickerTheme === "punish";
+        const progressLabelEl = document.getElementById("progress-label") || document.querySelector(".progress-label");
+        if (progressLabelEl) {
+            progressLabelEl.textContent = isPunish ? "맴매 스티커 모으기" : "칭찬 스티커 모으기";
+        }
+
         const targetCount = currentBoard.target_count;
         const completedCount = currentStickers.length;
         progressCount.textContent = `${completedCount} / ${targetCount} 개`;
@@ -1368,8 +1440,14 @@ async function refreshApp() {
         progressBarFill.style.width = `${percentage}%`;
 
         // 축하 배너 처리
+        const celebrationTitleEl = document.getElementById("celebration-title");
         if (completedCount >= targetCount) {
-            celebrationRewardDetail.textContent = `${currentBoard.reward_text}을(를) 획득할 시간이에요! 🎁`;
+            if (celebrationTitleEl) {
+                celebrationTitleEl.textContent = isPunish ? "목표 개수에 도달했어요! 🐾" : "축하합니다! 목표를 달성했어요! 🎉";
+            }
+            celebrationRewardDetail.textContent = isPunish
+                ? `${currentBoard.reward_text}을(를) 확인할 시간이에요! 💌`
+                : `${currentBoard.reward_text}을(를) 획득할 시간이에요! 🎁`;
             celebrationBanner.classList.remove("hidden");
         } else {
             celebrationBanner.classList.add("hidden");
@@ -1430,7 +1508,7 @@ async function refreshApp() {
         console.error("refreshApp 실행 중 오류 발생:", err);
     } finally {
         // 로딩 종료 보장
-        loadingSpinner.classList.add("hidden");
+        hideLoadingSpinner();
         if (welcomeScreen && welcomeScreen.classList.contains("hidden")) {
             appContent.classList.remove("hidden");
         }
@@ -1534,9 +1612,16 @@ async function handleSlotClick(index, isActive) {
         const rawMemo = sticker && sticker.memo ? sticker.memo : "";
         const parsed = parseStickerMemo(rawMemo);
 
-        const displayMemoText = parsed.memo ? parsed.memo : "등록된 칭찬 메모가 없습니다. 🐾";
+        const isPunish = getActiveStickerTheme() === "punish";
+        const defaultMemoText = isPunish ? "등록된 메모가 없습니다. 🐾" : "등록된 칭찬 메모가 없습니다. 🐾";
+        const displayMemoText = parsed.memo ? parsed.memo : defaultMemoText;
         const createdDate = sticker && sticker.created_at ? formatDate(sticker.created_at) : "";
         const updatedDate = sticker && sticker.updated_at ? formatDate(sticker.updated_at) : "";
+
+        const viewTitleEl = document.getElementById("modal-memo-view-title");
+        if (viewTitleEl) {
+            viewTitleEl.textContent = isPunish ? "맴매 스티커 메모 💌" : "칭찬 스티커 메모 💌";
+        }
 
         // 최초 생성 시간과 최근 수정 시간의 차이가 5초 이상인 경우에만 실제 수정된 것으로 간주
         const createdTime = sticker && sticker.created_at ? new Date(sticker.created_at).getTime() : 0;
@@ -1723,7 +1808,9 @@ if (btnShare) {
         if (createThemeSelect) {
             createThemeSelect.value = activeTheme;
         }
-        renderThemePreviewBar("create-theme-preview-bar", activeTheme);
+        inputCreateBoardTitle.placeholder = (activeTheme === "punish")
+            ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+            : "스티커판 이름 (예: 우리의 약속 판 🐾)";
         inputCreateBoardTitle.focus();
     });
 }
@@ -1740,52 +1827,57 @@ btnCreateBoard.addEventListener("click", async () => {
         return;
     }
     const titleVal = inputCreateBoardTitle.value.trim();
-    const finalTitle = titleVal || "우리의 새로운 칭찬판 💖";
+    const chosenTheme = normalizeStickerTheme((document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "praise");
+    const isPunish = chosenTheme === "punish";
+    const finalTitle = titleVal || (isPunish ? "우리의 맴매판 🐾" : "우리의 새로운 칭찬판 💖");
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalShare.classList.add("hidden");
 
-    // 순차적 보드 코드 생성 (마지막 숫자 + 1, 예: 달의 마지막 숫자가 2면 다음은 3)
-    const finalCode = await getNextSequentialBoardCode();
+    try {
+        // 순차적 보드 코드 생성 (마지막 숫자 + 1, 예: 달의 마지막 숫자가 2면 다음은 3)
+        const finalCode = await getNextSequentialBoardCode();
 
-    const chosenTheme = normalizeStickerTheme((document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "praise");
-    let activeColor = (currentBoard && currentBoard.theme_color) || localStorage.getItem(`board_theme_color_${currentBoardId}`);
-    if (!activeColor) {
-        activeColor = chosenTheme === "punish" ? "#E11D48" : "#F97316";
-    }
-    const activePin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
+        const activeColor = isPunish ? "#E11D48" : "#F97316";
+        const activePin = (currentBoard && currentBoard.editor_pin) || localStorage.getItem(`board_pin_${currentBoardId}`) || "1234";
 
-    const newBoard = {
-        id: finalCode,
-        title: finalTitle,
-        target_count: 30,
-        reward_text: "새로운 선물 지정하기",
-        editor_pin: activePin,
-        theme: chosenTheme,
-        theme_color: activeColor,
-        custom_labels: { theme: chosenTheme },
-        created_at: new Date().toISOString()
-    };
+        const newBoard = {
+            id: finalCode,
+            title: finalTitle,
+            target_count: 30,
+            reward_text: isPunish ? "약속 지키기" : "새로운 선물 지정하기",
+            editor_pin: activePin,
+            theme: chosenTheme,
+            theme_color: activeColor,
+            custom_labels: { theme: chosenTheme },
+            created_at: new Date().toISOString()
+        };
 
-    const result = await apiCreateBoard(newBoard);
-    if (result.success) {
-        currentBoardId = finalCode;
-        localStorage.setItem("current_board_id", finalCode);
-        localStorage.setItem(`board_pin_${finalCode}`, activePin);
-        localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
-        await apiSaveThemeColor(finalCode, activeColor);
-        await saveStickerTheme(chosenTheme, finalCode);
-        localStorage.setItem("is_editor", "true");
-        inputCreateBoardTitle.value = "";
-        isEditorMode = true;
-        updateRoleUI();
-        await refreshApp();
+        const result = await apiCreateBoard(newBoard);
+        if (result.success) {
+            currentBoardId = finalCode;
+            localStorage.setItem("current_board_id", finalCode);
+            localStorage.setItem(`board_pin_${finalCode}`, activePin);
+            localStorage.setItem(`board_theme_color_${finalCode}`, activeColor);
+            await apiSaveThemeColor(finalCode, activeColor);
+            await saveStickerTheme(chosenTheme, finalCode);
+            localStorage.setItem("is_editor", "true");
+            inputCreateBoardTitle.value = "";
+            isEditorMode = true;
+            updateRoleUI();
+            await refreshApp();
 
-        showToast("새 칭찬판이 생성되었습니다! 🚀");
-    } else {
-        showToast(`칭찬판 개설 실패: ${result.error}`);
-        loadingSpinner.classList.add("hidden");
+            showToast(isPunish ? "새 맴매판이 생성되었습니다! 🚀" : "새 칭찬판이 생성되었습니다! 🚀");
+        } else {
+            showToast(`스티커판 개설 실패: ${result.error}`);
+            modalShare.classList.remove("hidden");
+        }
+    } catch (err) {
+        console.error("보드 생성 예외:", err);
+        showToast("보드 생성 중 오류가 발생했습니다.");
         modalShare.classList.remove("hidden");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -1808,7 +1900,12 @@ if (editStickerTheme) {
 const createBoardThemeSelect = document.getElementById("create-board-theme");
 if (createBoardThemeSelect) {
     createBoardThemeSelect.addEventListener("change", (e) => {
-        renderThemePreviewBar("create-theme-preview-bar", e.target.value);
+        const isPunish = normalizeStickerTheme(e.target.value) === "punish";
+        if (inputCreateBoardTitle) {
+            inputCreateBoardTitle.placeholder = isPunish
+                ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+                : "스티커판 이름 (예: 우리의 약속 판 🐾)";
+        }
     });
 }
 
@@ -2010,22 +2107,29 @@ btnSwitchBoard.addEventListener("click", async () => {
         return;
     }
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalSettings.classList.add("hidden");
 
-    const board = await apiGetBoard(code);
-    if (board) {
-        currentBoardId = code;
-        localStorage.setItem("current_board_id", code);
-        inputSwitchBoard.value = "";
-        isEditorMode = false; // 새로운 보드로 이동할 때는 기본 뷰어 모드로 안전화
-        updateRoleUI();
-        await refreshApp();
-        showToast(`칭찬판 '${board.title}'을 성공적으로 불러왔습니다!`);
-    } else {
-        showToast("존재하지 않는 칭찬판 공유 코드입니다.");
-        loadingSpinner.classList.add("hidden");
+    try {
+        const board = await apiGetBoard(code);
+        if (board) {
+            currentBoardId = code;
+            localStorage.setItem("current_board_id", code);
+            inputSwitchBoard.value = "";
+            isEditorMode = false; // 새로운 보드로 이동할 때는 기본 뷰어 모드로 안전화
+            updateRoleUI();
+            await refreshApp();
+            showToast(`스티커판 '${board.title}'을 성공적으로 불러왔습니다!`);
+        } else {
+            showToast("존재하지 않는 스티커판 공유 코드입니다.");
+            modalSettings.classList.remove("hidden");
+        }
+    } catch (err) {
+        console.error("보드 불러오기 오류:", err);
+        showToast("보드 불러오기 중 오류가 발생했습니다.");
         modalSettings.classList.remove("hidden");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -2033,48 +2137,55 @@ btnSwitchBoard.addEventListener("click", async () => {
 btnSettingsSave.addEventListener("click", async () => {
     if (!isEditorMode) return;
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalSettings.classList.add("hidden");
 
-    const newAppTitle = editAppTitle ? editAppTitle.value.trim() : "";
-    const newPin = editPin.value.trim();
-    const newReaderName = editReaderName.value.trim();
-    const newEditorName = editEditorName.value.trim();
+    try {
+        const newAppTitle = editAppTitle ? editAppTitle.value.trim() : "";
+        const newPin = editPin.value.trim();
+        const newReaderName = editReaderName.value.trim();
+        const newEditorName = editEditorName.value.trim();
 
-    if (newAppTitle) {
-        localStorage.setItem(`app_title_${currentBoardId}`, newAppTitle);
-        localStorage.setItem("global_app_title", newAppTitle);
-        if (appMainLogo) appMainLogo.textContent = newAppTitle;
-    }
-    if (newPin) localStorage.setItem(`board_pin_${currentBoardId}`, newPin);
-    localStorage.setItem("global_reader_role_name", newReaderName);
-    localStorage.setItem("global_editor_role_name", newEditorName);
+        if (newAppTitle) {
+            localStorage.setItem(`app_title_${currentBoardId}`, newAppTitle);
+            localStorage.setItem("global_app_title", newAppTitle);
+            if (appMainLogo) appMainLogo.textContent = newAppTitle;
+        }
+        if (newPin) localStorage.setItem(`board_pin_${currentBoardId}`, newPin);
+        localStorage.setItem("global_reader_role_name", newReaderName);
+        localStorage.setItem("global_editor_role_name", newEditorName);
 
-    const updated = {
-        ...currentBoard,
-        app_title: newAppTitle || (currentBoard && currentBoard.app_title) || "스티커판",
-        editor_pin: newPin || currentBoard.editor_pin,
-        reader_role_name: newReaderName || "여자친구 모드 (조회 전용)",
-        editor_role_name: newEditorName || "남자친구 모드 (부착 가능)"
-    };
+        const updated = {
+            ...currentBoard,
+            app_title: newAppTitle || (currentBoard && currentBoard.app_title) || "스티커판",
+            editor_pin: newPin || currentBoard.editor_pin,
+            reader_role_name: newReaderName || "여자친구 모드 (조회 전용)",
+            editor_role_name: newEditorName || "남자친구 모드 (부착 가능)"
+        };
 
-    if (editStickerTheme) {
-        const newTheme = normalizeStickerTheme(editStickerTheme.value);
-        await saveStickerTheme(newTheme, currentBoardId);
-        updated.theme = newTheme;
-        if (!updated.custom_labels) updated.custom_labels = {};
-        updated.custom_labels.theme = newTheme;
-    }
+        if (editStickerTheme) {
+            const newTheme = normalizeStickerTheme(editStickerTheme.value);
+            await saveStickerTheme(newTheme, currentBoardId);
+            updated.theme = newTheme;
+            if (!updated.custom_labels) updated.custom_labels = {};
+            updated.custom_labels.theme = newTheme;
+        }
 
-    const result = await apiCreateBoard(updated);
-    // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
-    currentBoard = updated;
-    await refreshApp();
+        const result = await apiCreateBoard(updated);
+        // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
+        currentBoard = updated;
+        await refreshApp();
 
-    if (result.success) {
-        showToast("칭찬판 보안 및 라벨 설정이 변경되었습니다. ✨");
-    } else {
-        showToast(`⚠️ 서버 저장 실패: ${result.error}`);
+        if (result.success) {
+            showToast("스티커판 보안 및 라벨 설정이 변경되었습니다. ✨");
+        } else {
+            showToast(`⚠️ 서버 저장 실패: ${result.error}`);
+        }
+    } catch (err) {
+        console.error("설정 저장 예외:", err);
+        showToast("설정 저장 중 오류가 발생했습니다.");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -2090,42 +2201,48 @@ btnBoardEditSave.addEventListener("click", async () => {
         return;
     }
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     if (modalBoardEdit) modalBoardEdit.classList.add("hidden");
 
-    const updatedBoard = {
-        ...editTargetBoard,
-        title: editBoardTitle.value.trim() || editTargetBoard.title,
-        target_count: count,
-        reward_text: editBoardReward.value.trim()
-    };
+    try {
+        const updatedBoard = {
+            ...editTargetBoard,
+            title: editBoardTitle.value.trim() || editTargetBoard.title,
+            target_count: count,
+            reward_text: editBoardReward.value.trim()
+        };
 
-    if (editBoardTheme) {
-        const selectedTheme = normalizeStickerTheme(editBoardTheme.value);
-        updatedBoard.theme = selectedTheme;
-        if (!updatedBoard.custom_labels) updatedBoard.custom_labels = {};
-        updatedBoard.custom_labels.theme = selectedTheme;
-        await saveStickerTheme(selectedTheme, editTargetBoard.id);
+        if (editBoardTheme) {
+            const selectedTheme = normalizeStickerTheme(editBoardTheme.value);
+            updatedBoard.theme = selectedTheme;
+            if (!updatedBoard.custom_labels) updatedBoard.custom_labels = {};
+            updatedBoard.custom_labels.theme = selectedTheme;
+            await saveStickerTheme(selectedTheme, editTargetBoard.id);
+        }
+
+        const result = await apiCreateBoard(updatedBoard);
+        // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
+        addRegisteredBoard(editTargetBoard.id, updatedBoard.title, updatedBoard.reward_text);
+
+        if (editTargetBoard.id === currentBoardId) {
+            currentBoard = updatedBoard;
+            await refreshApp();
+        } else {
+            renderBoardList();
+        }
+
+        if (result.success) {
+            showToast("스티커판이 성공적으로 수정되었습니다! ✨");
+        } else {
+            showToast(`⚠️ 서버 저장 실패: ${result.error}`);
+        }
+    } catch (err) {
+        console.error("보드 수정 예외:", err);
+        showToast("보드 수정 중 오류가 발생했습니다.");
+    } finally {
+        hideLoadingSpinner();
+        editTargetBoard = null;
     }
-
-    const result = await apiCreateBoard(updatedBoard);
-    // 로컬 캐시에는 apiCreateBoard 내부에서 이미 저장됨 → 로컬 상태는 항상 갱신
-    addRegisteredBoard(editTargetBoard.id, updatedBoard.title, updatedBoard.reward_text);
-
-    if (editTargetBoard.id === currentBoardId) {
-        currentBoard = updatedBoard;
-        await refreshApp();
-    } else {
-        renderBoardList();
-        loadingSpinner.classList.add("hidden");
-    }
-
-    if (result.success) {
-        showToast("칭찬판이 성공적으로 수정되었습니다! ✨");
-    } else {
-        showToast(`⚠️ 서버 저장 실패: ${result.error}`);
-    }
-    editTargetBoard = null;
 });
 
 btnBoardEditClose.addEventListener("click", () => {
@@ -2135,48 +2252,52 @@ btnBoardEditClose.addEventListener("click", () => {
 
 // 스티커 제거 또는 스티커판 삭제 확인 처리
 btnDeleteConfirm.addEventListener("click", async () => {
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalDelete.classList.add("hidden");
 
-    // (A) 스티커판(보드) 삭제 처리
-    if (deleteTargetBoardId) {
-        const boardIdToDelete = deleteTargetBoardId;
-        deleteTargetBoardId = null;
-        const wasActive = boardIdToDelete === currentBoardId;
+    try {
+        // (A) 스티커판(보드) 삭제 처리
+        if (deleteTargetBoardId) {
+            const boardIdToDelete = deleteTargetBoardId;
+            deleteTargetBoardId = null;
+            const wasActive = boardIdToDelete === currentBoardId;
 
-        await apiDeleteBoard(boardIdToDelete);
-        removeRegisteredBoard(boardIdToDelete);
+            await apiDeleteBoard(boardIdToDelete);
+            removeRegisteredBoard(boardIdToDelete);
 
-        if (wasActive) {
-            sidebar.classList.remove("open");
-            sidebarOverlay.classList.add("hidden");
-            isEditorMode = localStorage.getItem("is_editor") === "true";
-            updateRoleUI();
-            const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
-            window.history.replaceState({ path: newUrl }, "", newUrl);
+            if (wasActive) {
+                sidebar.classList.remove("open");
+                sidebarOverlay.classList.add("hidden");
+                isEditorMode = localStorage.getItem("is_editor") === "true";
+                updateRoleUI();
+                const newUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+                window.history.replaceState({ path: newUrl }, "", newUrl);
+                await refreshApp();
+            } else {
+                renderBoardList();
+            }
+            showToast("스티커판이 완전히 삭제되었습니다. 🗑️");
+            return;
+        }
+
+        // (B) 스티커 제거 처리
+        if (deleteTargetIndex === null) {
+            return;
+        }
+
+        const success = await apiRemoveSticker(currentBoardId, deleteTargetIndex);
+        if (success) {
+            showToast(`${deleteTargetIndex + 1}번째 스티커를 제거했습니다.`);
+            deleteTargetIndex = null;
             await refreshApp();
         } else {
-            renderBoardList();
-            loadingSpinner.classList.add("hidden");
+            showToast("스티커 제거 실패");
         }
-        showToast("스티커판이 완전히 삭제되었습니다. 🗑️");
-        return;
-    }
-
-    // (B) 스티커 제거 처리
-    if (deleteTargetIndex === null) {
-        loadingSpinner.classList.add("hidden");
-        return;
-    }
-
-    const success = await apiRemoveSticker(currentBoardId, deleteTargetIndex);
-    if (success) {
-        showToast(`${deleteTargetIndex + 1}번째 스티커를 제거했습니다.`);
-        deleteTargetIndex = null;
-        await refreshApp();
-    } else {
-        showToast("스티커 제거 실패");
-        loadingSpinner.classList.add("hidden");
+    } catch (err) {
+        console.error("삭제 처리 오류:", err);
+        showToast("삭제 처리 중 오류가 발생했습니다.");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -2192,17 +2313,23 @@ btnMemoSubmit.addEventListener("click", async () => {
     const memoText = inputStickerMemo.value.trim();
     const formattedMemo = `[type:${selectedStickerType}] ${memoText}`;
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalMemoInput.classList.add("hidden");
 
-    const success = await apiAddSticker(currentBoardId, memoTargetIndex, formattedMemo);
-    if (success) {
-        showToast(`${memoTargetIndex + 1}번째 칸에 스티커 부착 완료! ✨🐾`);
-        memoTargetIndex = null;
-        await refreshApp();
-    } else {
+    try {
+        const success = await apiAddSticker(currentBoardId, memoTargetIndex, formattedMemo);
+        if (success) {
+            showToast(`${memoTargetIndex + 1}번째 칸에 스티커 부착 완료! ✨🐾`);
+            memoTargetIndex = null;
+            await refreshApp();
+        } else {
+            showToast("스티커 부착 중 에러가 발생했습니다.");
+        }
+    } catch (err) {
+        console.error("스티커 부착 오류:", err);
         showToast("스티커 부착 중 에러가 발생했습니다.");
-        loadingSpinner.classList.add("hidden");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -2271,18 +2398,25 @@ btnMemoEditSave.addEventListener("click", async () => {
     const keepType = parsed.type !== null ? (parsed.type % PRAISE_STICKERS.length) : (editTargetIndex % PRAISE_STICKERS.length);
     const formattedMemo = `[type:${keepType}] ${newMemoText}`;
 
-    loadingSpinner.classList.remove("hidden");
+    showLoadingSpinner();
     modalMemoView.classList.add("hidden");
 
-    const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, formattedMemo);
-    if (success) {
-        showToast("칭찬 메모가 수정되었습니다. ✨");
-        editTargetIndex = null;
-        await refreshApp();
-    } else {
-        showToast("메모 수정에 실패했습니다.");
-        loadingSpinner.classList.add("hidden");
+    try {
+        const success = await apiUpdateStickerMemo(currentBoardId, editTargetIndex, formattedMemo);
+        if (success) {
+            showToast("메모가 수정되었습니다. ✨");
+            editTargetIndex = null;
+            await refreshApp();
+        } else {
+            showToast("메모 수정에 실패했습니다.");
+            modalMemoView.classList.remove("hidden");
+        }
+    } catch (err) {
+        console.error("메모 수정 오류:", err);
+        showToast("메모 수정 중 오류가 발생했습니다.");
         modalMemoView.classList.remove("hidden");
+    } finally {
+        hideLoadingSpinner();
     }
 });
 
@@ -2382,6 +2516,7 @@ document.addEventListener("keydown", (e) => {
 // 9. 앱 초기 구동 및 실시간 데이터 싱크 폴링
 // ==========================================
 function initializeApp() {
+    showLoadingSpinner(3500);
     // 1. 기존 데모/더미 데이터 로컬스토리지 캐시 정리
     localStorage.removeItem("board_DEFAULT");
     localStorage.removeItem("stickers_DEFAULT");
@@ -2470,7 +2605,9 @@ function initializeApp() {
             if (createThemeSelect) {
                 createThemeSelect.value = activeTheme;
             }
-            renderThemePreviewBar("create-theme-preview-bar", activeTheme);
+            inputCreateBoardTitle.placeholder = (activeTheme === "punish")
+                ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+                : "스티커판 이름 (예: 우리의 약속 판 🐾)";
             inputCreateBoardTitle.focus();
         });
     }
@@ -2512,44 +2649,51 @@ function initializeApp() {
             return;
         }
 
-        loadingSpinner.classList.remove("hidden");
+        showLoadingSpinner();
         welcomeScreen.classList.add("hidden");
 
-        const chosenTheme = normalizeStickerTheme((setupBoardTheme && setupBoardTheme.value) || "praise");
-        const defaultColor = chosenTheme === "punish" ? "#E11D48" : "#F97316";
+        try {
+            const chosenTheme = normalizeStickerTheme((setupBoardTheme && setupBoardTheme.value) || "praise");
+            const defaultColor = chosenTheme === "punish" ? "#E11D48" : "#F97316";
 
-        const newBoard = {
-            id: code,
-            title: title,
-            target_count: target,
-            reward_text: reward,
-            editor_pin: pin,
-            theme: chosenTheme,
-            theme_color: defaultColor,
-            custom_labels: { theme: chosenTheme },
-            created_at: new Date().toISOString()
-        };
+            const newBoard = {
+                id: code,
+                title: title,
+                target_count: target,
+                reward_text: reward,
+                editor_pin: pin,
+                theme: chosenTheme,
+                theme_color: defaultColor,
+                custom_labels: { theme: chosenTheme },
+                created_at: new Date().toISOString()
+            };
 
-        const result = await apiCreateBoard(newBoard);
-        if (result.success) {
-            currentBoardId = code;
-            localStorage.setItem("current_board_id", code);
-            localStorage.setItem(`board_pin_${code}`, pin);
-            localStorage.setItem(`board_theme_color_${code}`, defaultColor);
-            await apiSaveThemeColor(code, defaultColor);
-            await saveStickerTheme(chosenTheme, code);
-            localStorage.setItem("is_editor", "true");
-            isEditorMode = true;
-            updateRoleUI();
-            await refreshApp();
-            showToast("칭찬판이 성공적으로 개설되었습니다! 🚀");
+            const result = await apiCreateBoard(newBoard);
+            if (result.success) {
+                currentBoardId = code;
+                localStorage.setItem("current_board_id", code);
+                localStorage.setItem(`board_pin_${code}`, pin);
+                localStorage.setItem(`board_theme_color_${code}`, defaultColor);
+                await apiSaveThemeColor(code, defaultColor);
+                await saveStickerTheme(chosenTheme, code);
+                localStorage.setItem("is_editor", "true");
+                isEditorMode = true;
+                updateRoleUI();
+                await refreshApp();
+                showToast("칭찬판이 성공적으로 개설되었습니다! 🚀");
 
-            const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
-            window.history.replaceState({ path: newUrl }, "", newUrl);
-        } else {
-            showToast(`칭찬판 개설 실패: ${result.error}`);
+                const newUrl = `${window.location.origin}${window.location.pathname}?board=${code}`;
+                window.history.replaceState({ path: newUrl }, "", newUrl);
+            } else {
+                showToast(`칭찬판 개설 실패: ${result.error}`);
+                welcomeScreen.classList.remove("hidden");
+            }
+        } catch (err) {
+            console.error("초기 설정 오류:", err);
+            showToast("초기 설정 저장 중 오류가 발생했습니다.");
             welcomeScreen.classList.remove("hidden");
-            loadingSpinner.classList.add("hidden");
+        } finally {
+            hideLoadingSpinner();
         }
     });
 
