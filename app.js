@@ -539,16 +539,16 @@ const SEA_CREATURES = PRAISE_STICKERS; // 레거시 호환성 유지
 const STICKER_THEMES = (typeof window !== 'undefined' && window.CatStickersModule && window.CatStickersModule.STICKER_THEMES) ? window.CatStickersModule.STICKER_THEMES : {
     praise: {
         id: "praise",
-        name: "칭찬 스티커 🐾",
+        name: "칭찬 스티커",
         themeColor: "#F97316",
         desc: "착하고 예쁜 일을 했을 때 붙이는 고양이 칭찬 스티커",
         items: PRAISE_STICKERS
     },
     punish: {
         id: "punish",
-        name: "맴매 스티커 💢",
+        name: "옐로카드",
         themeColor: "#E11D48",
-        desc: "장난치거나 말썽부렸을 때 붙이는 고양이 맴매 스티커",
+        desc: "주의나 잘못한 점이 있을 때 붙이는 옐로카드",
         items: PUNISH_STICKERS
     }
 };
@@ -559,6 +559,8 @@ STICKER_THEMES.maemmae = STICKER_THEMES.punish;
 STICKER_THEMES.cat_playful = STICKER_THEMES.punish;
 STICKER_THEMES.image2 = STICKER_THEMES.punish;
 STICKER_THEMES.stickers2 = STICKER_THEMES.punish;
+STICKER_THEMES.yellow = STICKER_THEMES.punish;
+STICKER_THEMES.yellowcard = STICKER_THEMES.punish;
 
 function normalizeStickerTheme(theme) {
     if (typeof window !== 'undefined' && window.CatStickersModule && typeof window.CatStickersModule.normalizeStickerTheme === 'function') {
@@ -566,7 +568,7 @@ function normalizeStickerTheme(theme) {
     }
     if (!theme) return "praise";
     const str = String(theme).trim().toLowerCase();
-    if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매")) {
+    if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매") || str.includes("옐로") || str.includes("yellow")) {
         return "punish";
     }
     return "praise";
@@ -602,7 +604,7 @@ function getThemeStickerMarkup(theme, type) {
         const item = (themeObj && themeObj.items && themeObj.items[id]) ? themeObj.items[id] : null;
         const folder = safeTheme === "punish" ? "image2" : "image1";
         const src = item && item.src ? item.src : `${folder}/image_${id + 1}.png`;
-        const altText = safeTheme === "punish" ? "고양이 맴매 스티커" : "고양이 칭찬 스티커";
+        const altText = safeTheme === "punish" ? "고양이 옐로카드" : "고양이 칭찬 스티커";
         return `<img src="${src}" alt="${altText}" class="praise-sticker-img" draggable="false" />`;
     } catch (e) {
         console.warn("getThemeStickerMarkup fallback:", e);
@@ -718,10 +720,10 @@ function renderStickerPickerGrid() {
     const modalDescEl = document.getElementById("modal-memo-input-desc");
     const labelMemoEl = document.getElementById("label-sticker-memo");
     if (modalTitleEl) {
-        modalTitleEl.textContent = isPunish ? "🐾 맴매 스티커 선택" : "🐾 칭찬 스티커 선택";
+        modalTitleEl.textContent = isPunish ? "🟨 옐로카드 선택" : "🐱 칭찬 스티커 선택";
     }
     if (modalDescEl) {
-        modalDescEl.textContent = isPunish ? "붙이고 싶은 맴매 스티커를 골라주세요!" : "붙이고 싶은 칭찬 스티커를 골라주세요!";
+        modalDescEl.textContent = isPunish ? "붙이고 싶은 옐로카드를 골라주세요!" : "붙이고 싶은 칭찬 스티커를 골라주세요!";
     }
     if (labelMemoEl) {
         labelMemoEl.textContent = isPunish ? "✍️ 잘못한 점 남기기" : "✍️ 잘한 점 남기기";
@@ -730,7 +732,7 @@ function renderStickerPickerGrid() {
         inputStickerMemo.placeholder = isPunish ? "예: 다음에는 꼭 조심하기! 약속 🐾" : "예: 오늘도 너무 잘했어! 최고야 🐾";
     }
     if (btnMemoSubmit) {
-        btnMemoSubmit.textContent = isPunish ? "맴매 스티커 붙이기 🐾" : "칭찬 스티커 붙이기 🐾";
+        btnMemoSubmit.textContent = isPunish ? "옐로카드 붙이기" : "칭찬 스티커 붙이기";
     }
 
     stickerList.forEach((sticker, id) => {
@@ -1078,7 +1080,7 @@ function createBoardItemDOM(board, isLocal) {
     const bTheme = board.theme || (board.custom_labels && board.custom_labels.theme) || localStorage.getItem(`board_sticker_theme_${board.id}`) || "praise";
     const isPunish = normalizeStickerTheme(bTheme) === "punish";
     const themeBadgeHtml = isPunish
-        ? `<span class="badge-board-theme" style="display:inline-block; font-size:10px; font-weight:700; color:#E11D48; background:#FFE4E6; border-radius:4px; padding:1px 5px; margin-left:4px;">맴매</span>`
+        ? `<span class="badge-board-theme" style="display:inline-block; font-size:10px; font-weight:700; color:#E11D48; background:#FFE4E6; border-radius:4px; padding:1px 5px; margin-left:4px;">옐로카드</span>`
         : `<span class="badge-board-theme" style="display:inline-block; font-size:10px; font-weight:700; color:#EA580C; background:#FFEDD5; border-radius:4px; padding:1px 5px; margin-left:4px;">칭찬</span>`;
 
     item.innerHTML = `
@@ -1429,7 +1431,7 @@ async function refreshApp() {
         const isPunish = activeStickerTheme === "punish";
         const progressLabelEl = document.getElementById("progress-label") || document.querySelector(".progress-label");
         if (progressLabelEl) {
-            progressLabelEl.textContent = isPunish ? "맴매 스티커 모으기" : "칭찬 스티커 모으기";
+            progressLabelEl.textContent = isPunish ? "옐로카드 모으기" : "칭찬 스티커 모으기";
         }
 
         const targetCount = currentBoard.target_count;
@@ -1620,7 +1622,7 @@ async function handleSlotClick(index, isActive) {
 
         const viewTitleEl = document.getElementById("modal-memo-view-title");
         if (viewTitleEl) {
-            viewTitleEl.textContent = isPunish ? "맴매 스티커 메모 💌" : "칭찬 스티커 메모 💌";
+            viewTitleEl.textContent = isPunish ? "옐로카드 메모 💌" : "칭찬 스티커 메모 💌";
         }
 
         // 최초 생성 시간과 최근 수정 시간의 차이가 5초 이상인 경우에만 실제 수정된 것으로 간주
@@ -1809,7 +1811,7 @@ if (btnShare) {
             createThemeSelect.value = activeTheme;
         }
         inputCreateBoardTitle.placeholder = (activeTheme === "punish")
-            ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+            ? "스티커판 이름 (예: 우리의 옐로카드 판 🐾)"
             : "스티커판 이름 (예: 우리의 약속 판 🐾)";
         inputCreateBoardTitle.focus();
     });
@@ -1829,7 +1831,7 @@ btnCreateBoard.addEventListener("click", async () => {
     const titleVal = inputCreateBoardTitle.value.trim();
     const chosenTheme = normalizeStickerTheme((document.getElementById("create-board-theme") && document.getElementById("create-board-theme").value) || "praise");
     const isPunish = chosenTheme === "punish";
-    const finalTitle = titleVal || (isPunish ? "우리의 맴매판 🐾" : "우리의 새로운 칭찬판 💖");
+    const finalTitle = titleVal || (isPunish ? "우리의 옐로카드 판 🐾" : "우리의 새로운 칭찬판 💖");
 
     showLoadingSpinner();
     modalShare.classList.add("hidden");
@@ -1867,7 +1869,7 @@ btnCreateBoard.addEventListener("click", async () => {
             updateRoleUI();
             await refreshApp();
 
-            showToast(isPunish ? "새 맴매판이 생성되었습니다! 🚀" : "새 칭찬판이 생성되었습니다! 🚀");
+            showToast(isPunish ? "새 옐로카드 판이 생성되었습니다! 🚀" : "새 칭찬판이 생성되었습니다! 🚀");
         } else {
             showToast(`스티커판 개설 실패: ${result.error}`);
             modalShare.classList.remove("hidden");
@@ -1903,7 +1905,7 @@ if (createBoardThemeSelect) {
         const isPunish = normalizeStickerTheme(e.target.value) === "punish";
         if (inputCreateBoardTitle) {
             inputCreateBoardTitle.placeholder = isPunish
-                ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+                ? "스티커판 이름 (예: 우리의 옐로카드 판 🐾)"
                 : "스티커판 이름 (예: 우리의 약속 판 🐾)";
         }
     });
@@ -2606,7 +2608,7 @@ function initializeApp() {
                 createThemeSelect.value = activeTheme;
             }
             inputCreateBoardTitle.placeholder = (activeTheme === "punish")
-                ? "스티커판 이름 (예: 우리의 맴매판 🐾)"
+                ? "스티커판 이름 (예: 우리의 옐로카드 판 🐾)"
                 : "스티커판 이름 (예: 우리의 약속 판 🐾)";
             inputCreateBoardTitle.focus();
         });

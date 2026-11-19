@@ -1,5 +1,5 @@
 // ==========================================
-// 고양이 칭찬판 2종 스티커 컬렉션 (칭찬 스티커 & 맴매 스티커)
+// 고양이 칭찬판 2종 스티커 컬렉션 (칭찬 스티커 & 옐로카드)
 // ==========================================
 
 (function(global) {
@@ -14,7 +14,7 @@
         { id: 4, src: "image1/image_5.png", fallbackSrc: "image/image_5.png", emoji: "🐱" }
     ];
 
-    // 2. 고양이 맴매 스티커 5종 (image2 폴더의 고양이 이미지 5종)
+    // 2. 고양이 옐로카드 5종 (image2 폴더의 고양이 이미지 5종)
     const PUNISH_STICKERS = [
         { id: 0, src: "image2/image_1.png", fallbackSrc: "stickers2/image_1.png", emoji: "🐾" },
         { id: 1, src: "image2/image_2.png", fallbackSrc: "stickers2/image_2.png", emoji: "🐾" },
@@ -27,16 +27,16 @@
     const STICKER_THEMES = {
         praise: {
             id: "praise",
-            name: "칭찬 스티커 🐾",
+            name: "칭찬 스티커",
             themeColor: "#F97316",
             desc: "착하고 예쁜 일을 했을 때 붙이는 고양이 칭찬 스티커",
             items: PRAISE_STICKERS
         },
         punish: {
             id: "punish",
-            name: "맴매 스티커 💢",
+            name: "옐로카드",
             themeColor: "#E11D48",
-            desc: "장난치거나 말썽부렸을 때 붙이는 고양이 맴매 스티커",
+            desc: "주의나 잘못한 점이 있을 때 붙이는 옐로카드",
             items: PUNISH_STICKERS
         }
     };
@@ -49,11 +49,13 @@
     STICKER_THEMES.cat_playful = STICKER_THEMES.punish;
     STICKER_THEMES.image2 = STICKER_THEMES.punish;
     STICKER_THEMES.stickers2 = STICKER_THEMES.punish;
+    STICKER_THEMES.yellow = STICKER_THEMES.punish;
+    STICKER_THEMES.yellowcard = STICKER_THEMES.punish;
 
     function normalizeStickerTheme(theme) {
         if (!theme) return "praise";
         const str = String(theme).trim().toLowerCase();
-        if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매")) {
+        if (str === "punish" || str === "maemmae" || str === "cat_playful" || str === "image2" || str === "stickers2" || str.includes("맴매") || str.includes("옐로") || str.includes("yellow")) {
             return "punish";
         }
         return "praise";
@@ -394,7 +396,7 @@
         const item = (themeObj && themeObj.items && themeObj.items[id]) ? themeObj.items[id] : null;
         const folder = safeTheme === "punish" ? "image2" : "image1";
         const src = item && item.src ? item.src : `${folder}/image_${id + 1}.png`;
-        const altText = safeTheme === "punish" ? "고양이 맴매 스티커" : "고양이 칭찬 스티커";
+        const altText = safeTheme === "punish" ? "고양이 옐로카드" : "고양이 칭찬 스티커";
         const vectorSvg = getThemeVectorGraphic(safeTheme === "punish" ? "cat_playful" : "cat", id);
 
         return `
