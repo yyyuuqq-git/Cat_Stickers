@@ -2827,7 +2827,10 @@ function initializeApp() {
 
     // 2. 웰컴 스크린 칭찬판 최초 생성 처리
     btnSetupSubmit.addEventListener("click", async () => {
-        const code = setupBoardId.value.trim().toUpperCase();
+        let code = setupBoardId.value.trim().toUpperCase();
+        if (!code.startsWith("CAT")) {
+            code = "CAT_" + code;
+        }
         const title = setupTitle.value.trim();
         const target = parseInt(setupTargetCount.value);
         const reward = setupReward.value.trim();
